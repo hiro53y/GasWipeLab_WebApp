@@ -88,12 +88,16 @@
     <div id="params-container"></div>
     <div style="margin-bottom:10px">
       <label style="font-size:12px;color:#374151">ガス種</label>
-      <select id="gas-type" style="margin-top:4px">
+      <select id="gas-type" style="margin-top:4px" onchange="drawDiagram(getCondition())">
         <option value="air">空気</option>
         <option value="nitrogen">窒素</option>
       </select>
     </div>
     <button class="btn-primary" onclick="runAnalysis()">🔍 解析実行</button>
+  </div>
+  <div class="card">
+    <div class="card-title">🏭 浴周辺 模式図</div>
+    <canvas id="nozzle-canvas" style="width:100%;height:auto;display:block;border-radius:6px;background:#fff"></canvas>
   </div>
   <div class="notice">本ツールの結果は実機保証値ではありません。条件比較・感度分析用です。</div>
 </div>
@@ -375,6 +379,8 @@ _baseline_result = _service.analyze(_baseline_cond)
   await runAnalysis();
   document.getElementById('loading').style.display = 'none';
   document.getElementById('main').style.display = 'block';
+  drawDiagram(getCondition());
+  window.addEventListener('resize', () => drawDiagram(getCondition()));
 }
 
 function setProgress(pct, msg) {
@@ -434,7 +440,7 @@ function buildParamUI() {
         </span>
       </div>
       <input type="range" id="range-${p.key}" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.def}"
-        oninput="document.getElementById('val-${p.key}').textContent=parseFloat(this.value).toFixed(${p.step<1?2:p.step<10?1:0})">
+        oninput="document.getElementById('val-${p.key}').textContent=parseFloat(this.value).toFixed(${p.step<1?2:p.step<10?1:0});drawDiagram(getCondition())">
     `;
     row.style.marginBottom = '12px';
     container.appendChild(row);
@@ -447,6 +453,175 @@ function getCondition() {
     cond[p.key] = parseFloat(document.getElementById('range-' + p.key).value);
   }
   return cond;
+}
+
+
+// ============================================================
+// 浴周辺 模式図 (Canvas描画)
+// ============================================================
+function drawDiagram(cond) {
+  const canvas = document.getElementById('nozzle-canvas');
+  if (!canvas) return;
+  const LW = 900, LH = 560;
+  canvas.width  = canvas.offsetWidth  || 360;
+  canvas.height = Math.round(canvas.width * LH / LW);
+  const s  = canvas.width / LW;
+  const ox = 0, oy = 0;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const px = (x) => x * s + ox;
+  const py = (y) => y * s + oy;
+
+  function arrow(x1,y1,x2,y2,color,w){
+    ctx.strokeStyle=color; ctx.lineWidth=w*s;
+    ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(px(x1),py(y1)); ctx.lineTo(px(x2),py(y2)); ctx.stroke();
+    const dx=x2-x1, dy=y2-y1, len=Math.max(Math.sqrt(dx*dx+dy*dy),0.01);
+    const ux=dx/len, uy=dy/len, sz=(7+w*1.6)*s;
+    ctx.fillStyle=color; ctx.beginPath();
+    ctx.moveTo(px(x2),py(y2));
+    ctx.lineTo(px(x2)-ux*sz-uy*sz*0.5, py(y2)-uy*sz+ux*sz*0.5);
+    ctx.lineTo(px(x2)-ux*sz+uy*sz*0.5, py(y2)-uy*sz-ux*sz*0.5);
+    ctx.closePath(); ctx.fill();
+  }
+  function dblArrow(x1,y1,x2,y2,color){arrow(x1,y1,x2,y2,color,1.4);arrow(x2,y2,x1,y1,color,1.4);}
+
+  const pressure = parseFloat(cond.plenum_pressure_kpa||30);
+  const gap      = parseFloat(cond.nozzle_gap_mm||1.0);
+  const distance = parseFloat(cond.nozzle_strip_distance_mm||10);
+  const speed    = parseFloat(cond.line_speed_mpm||120);
+  const bath_temp= parseFloat(cond.bath_temp_c||460);
+  const gasLabel = (cond.gas_type||'air')==='air' ? '空気' : '窒素';
+
+  const SX=470, SH=7, BATH_TOP=330, NY=150;
+  const tip_off = 16 + Math.min(Math.max((distance-1)/49,0),1)*40;
+
+  // 亜鉛めっき浴
+  ctx.fillStyle='#E8EAEE'; ctx.strokeStyle='#6B7280'; ctx.lineWidth=2*s;
+  ctx.beginPath(); ctx.rect(px(130),py(BATH_TOP),640*s,195*s); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle='#94A3B8'; ctx.lineWidth=2*s; ctx.beginPath();
+  let wx=130, up=true;
+  ctx.moveTo(px(130),py(BATH_TOP));
+  while(wx<770){const nx=Math.min(wx+32,770);const cy=BATH_TOP+(up?-6:6);
+    ctx.quadraticCurveTo(px((wx+nx)/2),py(cy),px(nx),py(BATH_TOP));wx=nx;up=!up;}
+  ctx.stroke();
+
+  // シンクロール
+  ctx.fillStyle='#FBF3C0'; ctx.strokeStyle='#6B7280'; ctx.lineWidth=2*s;
+  ctx.beginPath(); ctx.arc(px(415),py(430),58*s,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  // 鋼板（lineCap='butt'が正しい。'flat'は無効）
+  ctx.strokeStyle='#1D4ED8'; ctx.lineWidth=Math.max(2,2*SH*s); ctx.lineCap='butt'; ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(px(150),py(55));
+  ctx.lineTo(px(362),py(408));
+  ctx.bezierCurveTo(px(395),py(505),px(470),py(498),px(470),py(418));
+  ctx.lineTo(px(SX),py(40));
+  ctx.stroke();
+
+  // 液膜
+  [-1,1].forEach(sign=>{
+    ctx.fillStyle='rgba(226,85,161,0.65)'; ctx.strokeStyle='#E255A1'; ctx.lineWidth=1*s;
+    ctx.beginPath();
+    ctx.moveTo(px(SX+sign*SH),py(BATH_TOP));
+    ctx.bezierCurveTo(px(SX+sign*(SH+14)),py(BATH_TOP-40),px(SX+sign*(SH+11)),py(NY+60),px(SX+sign*(SH+2.5)),py(NY+8));
+    ctx.lineTo(px(SX+sign*(SH+1.5)),py(70));
+    ctx.lineTo(px(SX+sign*SH),py(70));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+
+  // ワイピングノズル
+  [true,false].forEach(left=>{
+    const sign=left?-1:1;
+    const tipX=SX+sign*(SH+tip_off), backX=tipX+sign*130;
+    ctx.fillStyle='#DCEFDC'; ctx.strokeStyle='#4B5563'; ctx.lineWidth=2*s;
+    ctx.beginPath();
+    ctx.moveTo(px(backX),py(NY-50));
+    ctx.lineTo(px(tipX+sign*8),py(NY-7));
+    ctx.lineTo(px(tipX),py(NY-4));
+    ctx.lineTo(px(tipX),py(NY+4));
+    ctx.lineTo(px(tipX+sign*8),py(NY+7));
+    ctx.lineTo(px(backX),py(NY+50));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#9CA3AF'; ctx.lineWidth=1*s;
+    ctx.beginPath();
+    ctx.moveTo(px(backX-sign*5),py(NY-24));
+    ctx.lineTo(px(tipX+sign*24),py(NY-3));
+    ctx.lineTo(px(tipX+sign*24),py(NY+3));
+    ctx.lineTo(px(backX-sign*5),py(NY+24));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+
+  // ガス噴流
+  [true,false].forEach(left=>{
+    const sign=left?-1:1;
+    const jx=SX+sign*(SH+tip_off-2), tx=SX+sign*(SH+2);
+    arrow(jx,NY,tx,NY,'#7C3AED',2.6);
+    arrow(jx,NY-3,tx+sign*3,NY-24,'#7C3AED',2.2);
+    arrow(jx,NY+3,tx+sign*3,NY+24,'#7C3AED',2.2);
+  });
+
+  // 寸法注記
+  const rtip=SX+(SH+tip_off), zy=NY+72;
+  ctx.strokeStyle='#374151'; ctx.lineWidth=1.1*s; ctx.setLineDash([4*s,3*s]);
+  ctx.beginPath(); ctx.moveTo(px(rtip),py(NY+10)); ctx.lineTo(px(rtip),py(zy+5)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(px(SX+SH),py(NY+36)); ctx.lineTo(px(SX+SH),py(zy+5)); ctx.stroke();
+  ctx.setLineDash([]);
+  dblArrow(SX+SH,zy,rtip,zy,'#374151');
+  const bsz=Math.max(9,Math.min(13,Math.round(12*s)));
+  ctx.font=`${bsz}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#1F2937'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText(`ノズル-鋼板 ${distance.toFixed(1)} mm`, px(rtip+14), py(zy));
+
+  // スプラッシュ粒子
+  ctx.fillStyle='#9CA3AF';
+  [[24,58,2.6],[38,74,2.2],[20,92,2.0],[-26,62,2.4],[-40,80,2.0],[-22,96,1.9]].forEach(([dx,dy,r])=>{
+    ctx.beginPath(); ctx.arc(px(SX+dx),py(NY+dy),r*s,0,Math.PI*2); ctx.fill();
+  });
+  ctx.font=`${bsz}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#6B7280';
+  ctx.fillText('スプラッシュ注意', px(rtip+14), py(zy+30));
+
+  // 鋼板進入矢印
+  arrow(188,146,231,218,'#DC2626',3.0);
+  arrow(SX+34,480,SX+34,390,'#DC2626',3.5);
+
+  // ラベル
+  const bb=Math.max(10,Math.min(14,Math.round(13*s)));
+  const sb=Math.max(8,Math.min(12,Math.round(11*s)));
+
+  ctx.font=`bold ${bb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#1F2937';
+  ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText('鋼板', px(180), py(28));
+
+  ctx.font=`bold ${bb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#DC2626';
+  ctx.textAlign='left'; ctx.fillText('通板方向', px(SX+50), py(418));
+  ctx.font=`${sb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#6B7280';
+  ctx.fillText(`${speed.toFixed(0)} m/min`, px(SX+50), py(438));
+
+  ctx.font=`bold ${bb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#1F2937';
+  ctx.textAlign='right'; ctx.fillText('ワイピングノズル', px(430), py(42));
+  ctx.font=`${sb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#6B7280';
+  ctx.textAlign='right'; ctx.fillText(`圧力 ${pressure.toFixed(0)} kPa（${gasLabel}）`, px(430), py(62));
+  ctx.fillText(`すき間 ${gap.toFixed(2)} mm`, px(430), py(80));
+  ctx.strokeStyle='#9CA3AF'; ctx.lineWidth=1.2*s; ctx.beginPath();
+  ctx.moveTo(px(400),py(96)); ctx.lineTo(px(380),py(NY-44)); ctx.stroke();
+
+  ctx.font=`bold ${bb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#1F2937';
+  ctx.textAlign='left'; ctx.fillText('ワイピングノズル', px(520), py(68));
+
+  ctx.strokeStyle='#C0587A'; ctx.lineWidth=1.2*s; ctx.beginPath();
+  ctx.moveTo(px(SX+SH+12),py(BATH_TOP-38)); ctx.lineTo(px(560),py(BATH_TOP-52)); ctx.stroke();
+  ctx.font=`${sb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#1F2937';
+  ctx.textAlign='left'; ctx.fillText('液膜（溶融亜鉛）', px(566), py(BATH_TOP-54));
+  ctx.fillStyle='#6B7280'; ctx.fillText('かき落とし', px(566), py(BATH_TOP-34));
+
+  ctx.font=`bold ${bb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#1F2937';
+  ctx.textAlign='left'; ctx.fillText('亜鉛めっき浴', px(150), py(476));
+  ctx.font=`${sb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#6B7280';
+  ctx.fillText(`浴温 ${bath_temp.toFixed(0)} ℃`, px(150), py(496));
+
+  ctx.font=`${sb}px 'Yu Gothic UI',sans-serif`; ctx.fillStyle='#9CA3AF';
+  ctx.textAlign='left';
+  ctx.fillText('模式図（縮尺は実機と異なります）。鋼板の余剰亜鉛をガス噴流でかき落とし、目付を調整します。', px(130), py(546));
 }
 
 // ============================================================
