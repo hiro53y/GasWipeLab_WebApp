@@ -342,13 +342,29 @@ def _jdefault(o):
 def _jdumps(obj):
     return json.dumps(obj, default=_jdefault)
 
+# JS不要なキーを除去し、numpy配列をlistに変換（確実なシリアライズ保証）
+_SKIP_KEYS = {'gas_state'}
+def _prep(r):
+    out = {}
+    for k, v in r.items():
+        if k in _SKIP_KEYS:
+            continue
+        if hasattr(v, 'tolist'):
+            out[k] = v.tolist()
+        elif isinstance(v, (bool, int, float, str, list, dict)) or v is None:
+            out[k] = v
+        else:
+            try: out[k] = float(v)
+            except: out[k] = str(v)
+    return out
+
 _service = AnalysisService()
 _calib_service = CalibrationService(_service)
 _baseline_cond = _service.default_condition().model_dump()
 _baseline_result = _service.analyze(_baseline_cond)
   `);
   baselineCond = JSON.parse(await pyodide.runPythonAsync(`_jdumps(_baseline_cond)`));
-  baselineResult = JSON.parse(await pyodide.runPythonAsync(`_jdumps(_baseline_result)`));
+  baselineResult = JSON.parse(await pyodide.runPythonAsync(`_jdumps(_prep(_baseline_result))`));
   setProgress(95, 'UI構築中...');
   buildParamUI();
   setProgress(100, '完了');
@@ -449,7 +465,7 @@ async function runAnalysis() {
 _cond = json.loads('''${condJson.replace(/'/g, "\\'")}''')
 _cond['project_name'] = 'web_session'
 _result = _service.analyze(_cond)
-_jdumps(_result)
+_jdumps(_prep(_result))
   `);
   currentResult = JSON.parse(resultJson);
   updateKPIs(currentResult);
