@@ -328,14 +328,27 @@ import sys
 sys.path.insert(0, '/python')
 from gaswipelab.services.analysis_service import AnalysisService
 from gaswipelab.services.calibration_service import CalibrationService
-import json
+import json, numpy as _np
+from dataclasses import asdict as _asdict, is_dataclass as _is_dc
+
+def _jdefault(o):
+    if isinstance(o, _np.ndarray): return o.tolist()
+    if isinstance(o, (_np.integer, _np.bool_)): return int(o)
+    if isinstance(o, _np.floating): return float(o)
+    if _is_dc(o) and not isinstance(o, type): return _asdict(o)
+    if hasattr(o, '__dict__'): return vars(o)
+    return str(o)
+
+def _jdumps(obj):
+    return json.dumps(obj, default=_jdefault)
+
 _service = AnalysisService()
 _calib_service = CalibrationService(_service)
 _baseline_cond = _service.default_condition().model_dump()
 _baseline_result = _service.analyze(_baseline_cond)
   `);
-  baselineCond = JSON.parse(await pyodide.runPythonAsync(`json.dumps(_baseline_cond)`));
-  baselineResult = JSON.parse(await pyodide.runPythonAsync(`json.dumps(_baseline_result)`));
+  baselineCond = JSON.parse(await pyodide.runPythonAsync(`_jdumps(_baseline_cond)`));
+  baselineResult = JSON.parse(await pyodide.runPythonAsync(`_jdumps(_baseline_result)`));
   setProgress(95, 'UI構築中...');
   buildParamUI();
   setProgress(100, '完了');
@@ -433,11 +446,10 @@ async function runAnalysis() {
   const cond = getCondition();
   const condJson = JSON.stringify(cond);
   const resultJson = await pyodide.runPythonAsync(`
-import json
 _cond = json.loads('''${condJson.replace(/'/g, "\\'")}''')
 _cond['project_name'] = 'web_session'
 _result = _service.analyze(_cond)
-json.dumps(_result)
+_jdumps(_result)
   `);
   currentResult = JSON.parse(resultJson);
   updateKPIs(currentResult);
@@ -560,11 +572,10 @@ async function runSweep() {
 
   const condJson = JSON.stringify(cond);
   const resultJson = await pyodide.runPythonAsync(`
-import json, numpy as np
 _base = json.loads('''${condJson.replace(/'/g,"\\'")}''')
 _base['project_name'] = 'sweep'
-_xvals = np.linspace(${xRange[0]}, ${xRange[1]}, ${n}).tolist()
-_yvals = np.linspace(${yRange[0]}, ${yRange[1]}, ${n}).tolist()
+_xvals = _np.linspace(${xRange[0]}, ${xRange[1]}, ${n}).tolist()
+_yvals = _np.linspace(${yRange[0]}, ${yRange[1]}, ${n}).tolist()
 _matrix = []
 for _yv in _yvals:
     _row = []
@@ -573,9 +584,9 @@ for _yv in _yvals:
         _c['${xKey}'] = _xv
         _c['${yKey}'] = _yv
         _r = _service.analyze(_c)
-        _row.append(_r['${metric}'])
+        _row.append(float(_r['${metric}']))
     _matrix.append(_row)
-json.dumps({'x':_xvals, 'y':_yvals, 'z':_matrix})
+_jdumps({'x':_xvals, 'y':_yvals, 'z':_matrix})
   `);
 
   const { x, y, z } = JSON.parse(resultJson);
@@ -609,11 +620,11 @@ async function loadCSV(file) {
   document.getElementById('csv-status').textContent = `読み込み中: ${file.name}`;
   const escaped = text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
   const reportJson = await pyodide.runPythonAsync(`
-import json, io
+import io
 from gaswipelab.services.csv_service import read_actual_results_csv_with_report
-_df, _report = read_actual_results_csv_with_report(io.StringIO('''${escaped}'''), is_text=True)
+_df, _report = read_actual_results_csv_with_report(io.StringIO('''${escaped}'''))
 _calib_df = _df
-json.dumps({'rows':_report.rows_loaded,'dropped':_report.rows_dropped,'columns':list(_df.columns)})
+_jdumps({'rows':_report.rows_loaded,'dropped':_report.rows_dropped,'columns':list(_df.columns)})
   `).catch(e => null);
 
   if (!reportJson) {
@@ -628,20 +639,17 @@ json.dumps({'rows':_report.rows_loaded,'dropped':_report.rows_dropped,'columns':
 async function runCalibration() {
   document.getElementById('calib-btn-card').querySelector('button').disabled = true;
   const resultJson = await pyodide.runPythonAsync(`
-import json
 _cal_result = _calib_service.calibrate(_calib_df)
-_cal_rows = _calib_service.coefficient_rows(_cal_result.coefficients, before=_cal_result.coefficients_before)
-json.dumps({
-  'metrics_before': {'mae':_cal_result.metrics_before.mae,'mape':_cal_result.metrics_before.mape,
-                      'rmse':_cal_result.metrics_before.rmse,'r2':_cal_result.metrics_before.r2},
-  'metrics_after': {'mae':_cal_result.metrics_after.mae,'mape':_cal_result.metrics_after.mape,
-                     'rmse':_cal_result.metrics_after.rmse,'r2':_cal_result.metrics_after.r2},
-  'coeff_rows': _cal_rows,
+_jdumps({
+  'metrics_before': {'mae':float(_cal_result.metrics_before.mae),'mape':float(_cal_result.metrics_before.mape),
+                      'rmse':float(_cal_result.metrics_before.rmse),'r2':float(_cal_result.metrics_before.r2)},
+  'metrics_after': {'mae':float(_cal_result.metrics_after.mae),'mape':float(_cal_result.metrics_after.mape),
+                     'rmse':float(_cal_result.metrics_after.rmse),'r2':float(_cal_result.metrics_after.r2)},
   'actual': _calib_df['measured_cw_one_side_gm2'].tolist(),
   'predicted_before': _calib_service.predict_dataframe(_calib_df).tolist(),
   'predicted_after': _cal_result.predicted_after.tolist(),
   'residual': _cal_result.residual_after.tolist(),
-  'coefficients': _cal_result.coefficients,
+  'coefficients': {k: float(v) for k, v in _cal_result.coefficients.items()},
 })
   `);
   calibResult = JSON.parse(resultJson);
@@ -712,13 +720,12 @@ async function runReverse() {
   document.getElementById('rev-btn').disabled = true;
 
   const resultJson = await pyodide.runPythonAsync(`
-import json, numpy as np
 _target_cw = ${target}
 _base = {'line_speed_mpm':${speed},'strip_width_mm':${width},'bath_temp_c':${bath},'gas_type':'${gasType}','project_name':'reverse','target_cw_one_side_gm2':_target_cw}
 _candidates = []
-_p_list = np.linspace(5, 80, 12)
-_z_list = np.linspace(3, 30, 12)
-_g_list = np.linspace(0.3, 2.5, 12)
+_p_list = _np.linspace(5, 80, 12)
+_z_list = _np.linspace(3, 30, 12)
+_g_list = _np.linspace(0.3, 2.5, 12)
 for _p in _p_list:
     for _z in _z_list:
         for _g in _g_list:
@@ -727,8 +734,8 @@ for _p in _p_list:
             _c['nozzle_strip_distance_mm'] = float(_z)
             _c['nozzle_gap_mm'] = float(_g)
             _r = _service.analyze(_c)
-            _err = abs(_r['cw_one_side_gm2'] - _target_cw)
-            _candidates.append({'err':_err,'cw':_r['cw_one_side_gm2'],'p':float(_p),'z':float(_z),'g':float(_g),'splash':_r['splash_level'],'conf':_r['model_confidence'],'unc':_r['uncertainty_relative_percent']})
+            _err = float(abs(_r['cw_one_side_gm2'] - _target_cw))
+            _candidates.append({'err':_err,'cw':float(_r['cw_one_side_gm2']),'p':float(_p),'z':float(_z),'g':float(_g),'splash':_r['splash_level'],'conf':_r['model_confidence'],'unc':float(_r['uncertainty_relative_percent'])})
 _candidates.sort(key=lambda x: x['err'])
 _top3 = []
 _seen = []
@@ -739,7 +746,7 @@ for _ca in _candidates:
         _top3.append(_ca)
     if len(_top3) >= 3:
         break
-json.dumps(_top3)
+_jdumps(_top3)
   `);
 
   document.getElementById('rev-progress').style.display = 'none';
