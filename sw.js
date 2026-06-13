@@ -1,5 +1,5 @@
 // Service Worker — GasWipeLab v2.2 オフラインキャッシュ
-const CACHE = 'gaswipelab-v2.2';
+const CACHE = 'gaswipelab-v2.3';
 const STATIC = [
   './',
   './index.html',
