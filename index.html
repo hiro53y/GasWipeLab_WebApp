@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1F4E79">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>GasWipeLab v2.2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+<style>
+  :root { --nav-h: 60px; }
+  body { background:#F0F4F8; font-family:-apple-system,sans-serif; }
+  #loading { position:fixed;inset:0;background:#1F4E79;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999; }
+  .spinner { width:48px;height:48px;border:5px solid #93C5FD;border-top-color:#fff;border-radius:50%;animation:spin 0.9s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+  .bottom-nav { position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:#fff;border-top:1px solid #E2E8F0;display:flex;z-index:100; }
+  .nav-btn { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:#94A3B8;gap:2px;border:none;background:none;cursor:pointer;padding:4px 0; }
+  .nav-btn.active { color:#1F4E79; }
+  .nav-btn svg { width:22px;height:22px; }
+  #main { padding:8px 8px calc(var(--nav-h) + 8px); }
+  .card { background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .card-title { font-size:13px;font-weight:700;color:#0B2A4A;margin-bottom:8px; }
+  .kpi-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:6px; }
+  .kpi { background:#F8FAFC;border-radius:8px;padding:8px 6px;text-align:center; }
+  .kpi-label { font-size:10px;color:#64748B;margin-bottom:2px; }
+  .kpi-value { font-size:18px;font-weight:700;color:#1F4E79; }
+  .kpi-unit { font-size:10px;color:#94A3B8; }
+  input[type=range] { width:100%;accent-color:#1F4E79; }
+  .param-row { display:flex;align-items:center;gap:8px;margin-bottom:10px; }
+  .param-label { font-size:12px;color:#374151;flex:1;min-width:0; }
+  .param-value { font-size:13px;font-weight:600;color:#1F4E79;width:60px;text-align:right; }
+  .param-unit { font-size:11px;color:#94A3B8;width:36px; }
+  select,input[type=number] { border:1px solid #D1D5DB;border-radius:6px;padding:6px 8px;font-size:13px;width:100%;background:#fff; }
+  table { width:100%;border-collapse:collapse;font-size:12px; }
+  th { background:#EFF6FF;color:#1E40AF;font-weight:600;padding:6px 8px;text-align:left; }
+  td { padding:6px 8px;border-bottom:1px solid #F1F5F9;color:#374151; }
+  tr:last-child td { border-bottom:none; }
+  .badge { display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600; }
+  .badge-low { background:#DCFCE7;color:#15803D; }
+  .badge-mid { background:#FEF9C3;color:#854D0E; }
+  .badge-high { background:#FEE2E2;color:#DC2626; }
+  .badge-ok { background:#DBEAFE;color:#1D4ED8; }
+  .btn-primary { background:#1F4E79;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;width:100%;cursor:pointer; }
+  .btn-secondary { background:#EFF6FF;color:#1F4E79;border:1px solid #BFDBFE;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer; }
+  .warn-box { background:#FFF7ED;border-left:4px solid #F97316;border-radius:6px;padding:10px 12px;font-size:12px;color:#7C2D12;margin-bottom:8px; }
+  .info-box { background:#EFF6FF;border-left:4px solid #3B82F6;border-radius:6px;padding:10px 12px;font-size:12px;color:#1E3A8A;margin-bottom:8px; }
+  .plot-box { height:220px;margin:4px 0; }
+  .plot-box-tall { height:260px;margin:4px 0; }
+  .sweep-select { display:flex;gap:8px;margin-bottom:8px; }
+  .sweep-select select { flex:1; }
+  .progress-bar { height:4px;background:#DBEAFE;border-radius:2px;overflow:hidden;margin:8px 0; }
+  .progress-fill { height:100%;background:#1F4E79;transition:width 0.3s; }
+  .result-row { display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F1F5F9; }
+  .result-label { font-size:12px;color:#6B7280; }
+  .result-value { font-size:13px;font-weight:600;color:#1F4E79; }
+  .drop-zone { border:2px dashed #93C3EA;border-radius:10px;padding:24px;text-align:center;color:#64748B;font-size:13px;background:#F8FAFC;cursor:pointer; }
+  .drop-zone.drag-over { background:#DBEAFE;border-color:#3B82F6; }
+  .section-sep { height:1px;background:#F1F5F9;margin:12px 0; }
+  .notice { background:#FEF2F2;border-left:4px solid #EF4444;border-radius:6px;padding:8px 12px;font-size:11px;color:#991B1B;margin-top:8px; }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading">
+  <div class="spinner" style="margin-bottom:20px"></div>
+  <div style="color:#fff;font-size:20px;font-weight:700;margin-bottom:8px">GasWipeLab v2.2</div>
+  <div id="load-status" style="color:#93C5FD;font-size:13px">初期化中... (初回のみ30秒ほどかかります)</div>
+  <div class="progress-bar" style="width:260px;margin-top:12px"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+</div>
+
+<!-- Main app -->
+<div id="main" style="display:none">
+
+<!-- ===== TAB 1: 条件入力 ===== -->
+<div id="tab-input" class="tab-content active">
+  <div class="card">
+    <div class="card-title">⚙️ ワイピング条件入力</div>
+    <div id="params-container"></div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:#374151">ガス種</label>
+      <select id="gas-type" style="margin-top:4px">
+        <option value="air">空気</option>
+        <option value="nitrogen">窒素</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="runAnalysis()">🔍 解析実行</button>
+  </div>
+  <div class="notice">本ツールの結果は実機保証値ではありません。条件比較・感度分析用です。</div>
+</div>
+
+<!-- ===== TAB 2: 単条件解析 ===== -->
+<div id="tab-single" class="tab-content">
+  <div class="card">
+    <div class="card-title">📊 主要指標 (KPI)</div>
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi"><div class="kpi-label">片面目付</div><div class="kpi-value" id="kpi-cw1">-</div><div class="kpi-unit">g/m²</div></div>
+      <div class="kpi"><div class="kpi-label">両面目付</div><div class="kpi-value" id="kpi-cw2">-</div><div class="kpi-unit">g/m²</div></div>
+      <div class="kpi"><div class="kpi-label">液膜厚さ</div><div class="kpi-value" id="kpi-film">-</div><div class="kpi-unit">µm</div></div>
+      <div class="kpi"><div class="kpi-label">出口速度</div><div class="kpi-value" id="kpi-vel">-</div><div class="kpi-unit">m/s</div></div>
+      <div class="kpi"><div class="kpi-label">Mach数</div><div class="kpi-value" id="kpi-mach">-</div><div class="kpi-unit">-</div></div>
+      <div class="kpi"><div class="kpi-label">スプラッシュ</div><div class="kpi-value" id="kpi-splash" style="font-size:14px">-</div><div class="kpi-unit">相対指標</div></div>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+      <span id="badge-confidence" class="badge">-</span>
+      <span id="badge-uncertainty" class="badge badge-ok">-</span>
+      <span id="badge-mach-warn" class="badge" style="display:none;background:#FEF3C7;color:#92400E">Mach>0.3</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 衝突圧力分布 P(x)</div>
+    <div id="plot-pressure" class="plot-box"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📈 せん断応力 τ(x)</div>
+    <div id="plot-shear" class="plot-box"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📈 推定液膜厚さ t(x)</div>
+    <div id="plot-film" class="plot-box"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚠️ 解析上の注意</div>
+    <div id="warnings-list" style="font-size:12px;color:#374151;line-height:1.7"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 現在条件 vs 基準条件</div>
+    <div style="overflow-x:auto">
+      <table id="compare-table">
+        <tr><th>項目</th><th>単位</th><th>現在</th><th>基準</th><th>差分</th></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB 3: 条件比較 ===== -->
+<div id="tab-sweep" class="tab-content">
+  <div class="card">
+    <div class="card-title">🗺️ 2パラメータスイープ</div>
+    <div class="sweep-select">
+      <div style="flex:1"><label style="font-size:11px;color:#64748B">X軸</label>
+        <select id="sweep-x">
+          <option value="plenum_pressure_kpa">噴射圧力 [kPa]</option>
+          <option value="line_speed_mpm">通板速度 [m/min]</option>
+          <option value="nozzle_strip_distance_mm">ノズル距離 [mm]</option>
+          <option value="nozzle_gap_mm">ノズルすき間 [mm]</option>
+        </select>
+      </div>
+      <div style="flex:1"><label style="font-size:11px;color:#64748B">Y軸</label>
+        <select id="sweep-y">
+          <option value="line_speed_mpm">通板速度 [m/min]</option>
+          <option value="plenum_pressure_kpa">噴射圧力 [kPa]</option>
+          <option value="nozzle_strip_distance_mm">ノズル距離 [mm]</option>
+          <option value="nozzle_gap_mm">ノズルすき間 [mm]</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:8px"><label style="font-size:11px;color:#64748B">表示指標</label>
+      <select id="sweep-metric">
+        <option value="cw_one_side_gm2">片面目付 [g/m²]</option>
+        <option value="film_thickness_um">液膜厚さ [µm]</option>
+      </select>
+    </div>
+    <div style="margin-bottom:8px;font-size:11px;color:#64748B">解像度</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="btn-secondary" onclick="setSweepRes(11)" id="res-11">粗(11×11)</button>
+      <button class="btn-secondary" onclick="setSweepRes(21)" id="res-21">中(21×21)</button>
+      <button class="btn-secondary" onclick="setSweepRes(31)" id="res-31">精(31×31)</button>
+    </div>
+    <button class="btn-primary" onclick="runSweep()" id="sweep-btn">▶ スイープ実行</button>
+    <div id="sweep-progress" style="display:none">
+      <div class="progress-bar"><div class="progress-fill" id="sweep-prog-fill" style="width:0%"></div></div>
+      <div id="sweep-status" style="font-size:11px;color:#64748B;text-align:center;margin-top:4px">計算中...</div>
+    </div>
+  </div>
+  <div class="card" id="sweep-result-card" style="display:none">
+    <div class="card-title" id="sweep-result-title">結果</div>
+    <div id="plot-heatmap" class="plot-box-tall"></div>
+  </div>
+</div>
+
+<!-- ===== TAB 4: 実績校正 ===== -->
+<div id="tab-calib" class="tab-content">
+  <div class="card">
+    <div class="card-title">📂 CSVデータ読み込み</div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-input').click()">
+      <div style="font-size:24px;margin-bottom:8px">📄</div>
+      <div>CSVをタップして選択</div>
+      <div style="font-size:11px;color:#94A3B8;margin-top:4px">または長押しでファイルを選択</div>
+    </div>
+    <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="loadCSV(this.files[0])">
+    <div id="csv-status" style="font-size:12px;color:#64748B;margin-top:8px">未読み込み</div>
+  </div>
+  <div class="card" id="calib-btn-card" style="display:none">
+    <button class="btn-primary" onclick="runCalibration()">⚙️ 校正実行</button>
+  </div>
+  <div class="card" id="calib-result-card" style="display:none">
+    <div class="card-title">📊 精度指標</div>
+    <table id="metrics-table">
+      <tr><th>指標</th><th>校正前</th><th>校正後</th><th>改善率</th></tr>
+    </table>
+    <div class="section-sep"></div>
+    <div class="card-title">🔧 校正係数</div>
+    <table id="coeff-table">
+      <tr><th>記号</th><th>校正前</th><th>校正後</th></tr>
+    </table>
+    <div class="section-sep"></div>
+    <div class="card-title">📈 予測 vs 実測</div>
+    <div id="plot-scatter" class="plot-box"></div>
+    <div class="card-title" style="margin-top:8px">📊 残差分布</div>
+    <div id="plot-hist" class="plot-box"></div>
+    <div id="calib-memo" style="font-size:12px;color:#374151;margin-top:8px;line-height:1.6"></div>
+    <button class="btn-secondary" onclick="saveCalibration()" style="margin-top:8px;width:100%">✅ 校正値を保存</button>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 CSVフォーマット（必須列）</div>
+    <div style="font-size:11px;color:#374151;line-height:2;font-family:monospace">
+      plenum_pressure_kpa<br>
+      nozzle_gap_mm<br>
+      nozzle_strip_distance_mm<br>
+      line_speed_mpm<br>
+      strip_width_mm<br>
+      bath_temp_c<br>
+      measured_cw_one_side_gm2
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB 5: 目標条件算出 ===== -->
+<div id="tab-reverse" class="tab-content">
+  <div class="card">
+    <div class="card-title">🎯 目標条件の逆算</div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:#374151">目標片面目付 [g/m²]</label>
+      <input type="number" id="rev-target" value="60" min="10" max="300" style="margin-top:4px">
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:#374151">通板速度 [m/min]</label>
+      <input type="number" id="rev-speed" value="120" min="10" max="300" style="margin-top:4px">
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:#374151">板幅 [mm]</label>
+      <input type="number" id="rev-width" value="1200" min="300" max="2000" style="margin-top:4px">
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:#374151">浴温 [℃]</label>
+      <input type="number" id="rev-bath" value="460" min="420" max="500" style="margin-top:4px">
+    </div>
+    <button class="btn-primary" onclick="runReverse()" id="rev-btn">🔍 条件を逆算する</button>
+    <div id="rev-progress" style="display:none">
+      <div class="progress-bar"><div class="progress-fill" id="rev-prog-fill" style="width:0%"></div></div>
+      <div style="font-size:11px;color:#64748B;text-align:center;margin-top:4px">グリッドサーチ中...</div>
+    </div>
+  </div>
+  <div class="card" id="rev-result-card" style="display:none">
+    <div class="card-title">🏆 推奨条件 Top3</div>
+    <div id="rev-results"></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- Bottom navigation -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-input" onclick="switchTab('input')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>条件入力
+  </button>
+  <button class="nav-btn" id="nav-single" onclick="switchTab('single')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>単条件解析
+  </button>
+  <button class="nav-btn" id="nav-sweep" onclick="switchTab('sweep')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>条件比較
+  </button>
+  <button class="nav-btn" id="nav-calib" onclick="switchTab('calib')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>実績校正
+  </button>
+  <button class="nav-btn" id="nav-reverse" onclick="switchTab('reverse')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>目標算出
+  </button>
+</nav>
+
+<script>
+// ============================================================
+// パラメータ定義
+// ============================================================
+const PARAMS = [
+  { key:'plenum_pressure_kpa',  label:'噴射圧力',      unit:'kPa',  min:1,   max:100,  step:0.5,  def:30 },
+  { key:'nozzle_gap_mm',        label:'ノズルすき間',  unit:'mm',   min:0.2, max:3.0,  step:0.05, def:1.0 },
+  { key:'nozzle_strip_distance_mm', label:'ノズル距離', unit:'mm',  min:1,   max:50,   step:0.5,  def:10 },
+  { key:'line_speed_mpm',       label:'通板速度',      unit:'m/min',min:10,  max:300,  step:1,    def:120 },
+  { key:'strip_width_mm',       label:'板幅',          unit:'mm',   min:300, max:2000, step:10,   def:1200 },
+  { key:'target_cw_one_side_gm2',label:'目標片面目付', unit:'g/m²', min:10,  max:300,  step:1,    def:60 },
+  { key:'bath_temp_c',          label:'浴温',          unit:'℃',   min:420, max:500,  step:0.5,  def:460 },
+];
+
+// グローバル状態
+let pyodide = null;
+let currentResult = null;
+let baselineResult = null;
+let baselineCond = null;
+let calibDf = null;
+let calibResult = null;
+let sweepRes = 21;
+
+// ============================================================
+// 初期化
+// ============================================================
+async function init() {
+  setProgress(5, 'Pyodide読み込み中...');
+  pyodide = await loadPyodide({
+    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/"
+  });
+  setProgress(25, 'numpy/scipy/pandas をインストール中...');
+  await pyodide.loadPackage(['numpy', 'scipy', 'pandas', 'pydantic']);
+  setProgress(55, 'Pythonモジュールを読み込み中...');
+  await installPythonModules();
+  setProgress(80, 'AnalysisServiceを初期化中...');
+  await pyodide.runPythonAsync(`
+import sys
+sys.path.insert(0, '/python')
+from gaswipelab.services.analysis_service import AnalysisService
+from gaswipelab.services.calibration_service import CalibrationService
+import json
+_service = AnalysisService()
+_calib_service = CalibrationService(_service)
+_baseline_cond = _service.default_condition().model_dump()
+_baseline_result = _service.analyze(_baseline_cond)
+  `);
+  baselineCond = JSON.parse(await pyodide.runPythonAsync(`json.dumps(_baseline_cond)`));
+  baselineResult = JSON.parse(await pyodide.runPythonAsync(`json.dumps(_baseline_result)`));
+  setProgress(95, 'UI構築中...');
+  buildParamUI();
+  setProgress(100, '完了');
+  await runAnalysis();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('progress').style.width = pct + '%';
+  document.getElementById('load-status').textContent = msg;
+}
+
+// ============================================================
+// Pythonファイルのインストール
+// ============================================================
+async function installPythonModules() {
+  const files = [
+    'python/gaswipelab/__init__.py',
+    'python/gaswipelab/models/__init__.py',
+    'python/gaswipelab/models/calibration_model.py',
+    'python/gaswipelab/models/coating_weight.py',
+    'python/gaswipelab/models/film_model.py',
+    'python/gaswipelab/models/gas_properties.py',
+    'python/gaswipelab/models/jet_impingement.py',
+    'python/gaswipelab/models/nozzle_model.py',
+    'python/gaswipelab/models/splash_risk.py',
+    'python/gaswipelab/models/units.py',
+    'python/gaswipelab/models/zinc_properties.py',
+    'python/gaswipelab/services/__init__.py',
+    'python/gaswipelab/services/analysis_service.py',
+    'python/gaswipelab/services/calibration_service.py',
+    'python/gaswipelab/services/csv_service.py',
+    'python/gaswipelab/services/settings_service.py',
+    'python/gaswipelab/utils/__init__.py',
+    'python/gaswipelab/utils/paths.py',
+    'python/gaswipelab/utils/validation.py',
+  ];
+  for (const f of files) {
+    const res = await fetch(f);
+    const text = await res.text();
+    const pyPath = '/python/' + f.replace('python/', '');
+    const dir = pyPath.substring(0, pyPath.lastIndexOf('/'));
+    pyodide.FS.mkdirTree(dir);
+    pyodide.FS.writeFile(pyPath, text);
+  }
+}
+
+// ============================================================
+// パラメータUI構築
+// ============================================================
+function buildParamUI() {
+  const container = document.getElementById('params-container');
+  container.innerHTML = '';
+  for (const p of PARAMS) {
+    const row = document.createElement('div');
+    row.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <span style="font-size:12px;color:#374151">${p.label}</span>
+        <span style="display:flex;align-items:center;gap:4px">
+          <span id="val-${p.key}" style="font-size:13px;font-weight:600;color:#1F4E79">${p.def}</span>
+          <span style="font-size:11px;color:#94A3B8">${p.unit}</span>
+        </span>
+      </div>
+      <input type="range" id="range-${p.key}" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.def}"
+        oninput="document.getElementById('val-${p.key}').textContent=parseFloat(this.value).toFixed(${p.step<1?2:p.step<10?1:0})">
+    `;
+    row.style.marginBottom = '12px';
+    container.appendChild(row);
+  }
+}
+
+function getCondition() {
+  const cond = { gas_type: document.getElementById('gas-type').value };
+  for (const p of PARAMS) {
+    cond[p.key] = parseFloat(document.getElementById('range-' + p.key).value);
+  }
+  return cond;
+}
+
+// ============================================================
+// タブ切替
+// ============================================================
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+
+// ============================================================
+// 解析実行
+// ============================================================
+async function runAnalysis() {
+  const cond = getCondition();
+  const condJson = JSON.stringify(cond);
+  const resultJson = await pyodide.runPythonAsync(`
+import json
+_cond = json.loads('''${condJson.replace(/'/g, "\\'")}''')
+_cond['project_name'] = 'web_session'
+_result = _service.analyze(_cond)
+json.dumps(_result)
+  `);
+  currentResult = JSON.parse(resultJson);
+  updateKPIs(currentResult);
+  updatePlots(currentResult);
+  updateCompareTable(currentResult, cond);
+  switchTab('single');
+}
+
+// ============================================================
+// KPI更新
+// ============================================================
+function updateKPIs(r) {
+  document.getElementById('kpi-cw1').textContent = r.cw_one_side_gm2.toFixed(1);
+  document.getElementById('kpi-cw2').textContent = r.cw_both_sides_gm2.toFixed(1);
+  document.getElementById('kpi-film').textContent = r.film_thickness_um.toFixed(2);
+  document.getElementById('kpi-vel').textContent = r.exit_velocity_m_s.toFixed(0);
+  document.getElementById('kpi-mach').textContent = r.mach.toFixed(3);
+  const splashEl = document.getElementById('kpi-splash');
+  splashEl.textContent = r.splash_level;
+  splashEl.style.color = r.splash_level==='低'?'#15803D':r.splash_level==='中'?'#B45309':'#DC2626';
+
+  const conf = r.model_confidence;
+  const confEl = document.getElementById('badge-confidence');
+  confEl.textContent = 'モデル信頼度：' + conf;
+  confEl.className = 'badge ' + (conf==='高'?'badge-low':conf==='中'?'badge-mid':'badge-high');
+
+  document.getElementById('badge-uncertainty').textContent = `不確かさ ±${r.uncertainty_relative_percent.toFixed(0)}%`;
+  document.getElementById('badge-mach-warn').style.display = r.mach_warning ? 'inline-block' : 'none';
+
+  const warnEl = document.getElementById('warnings-list');
+  warnEl.innerHTML = r.warnings.map(w => `<div>・${w}</div>`).join('') +
+    `<div>・推定範囲：${r.cw_one_side_low_gm2.toFixed(1)}〜${r.cw_one_side_high_gm2.toFixed(1)} g/m²</div>` +
+    `<div style="color:#9CA3AF;margin-top:6px">スプラッシュは相対指標。結果は実機保証値ではありません。</div>`;
+}
+
+// ============================================================
+// グラフ描画
+// ============================================================
+const PLOTLY_LAYOUT = {
+  margin:{l:50,r:12,t:8,b:40},
+  paper_bgcolor:'transparent', plot_bgcolor:'#FAFAFA',
+  font:{size:10,color:'#374151'},
+  xaxis:{gridcolor:'#E5EAF0',zeroline:false},
+  yaxis:{gridcolor:'#E5EAF0',zeroline:false},
+  showlegend:false
+};
+const PLOTLY_CONFIG = { displayModeBar:true, modeBarButtonsToRemove:['lasso2d','select2d','toImage'], responsive:true };
+
+function plotLine(divId, x, y, color, xLabel, yLabel) {
+  Plotly.react(divId, [{x, y, mode:'lines', line:{color, width:2}}],
+    {...PLOTLY_LAYOUT, xaxis:{...PLOTLY_LAYOUT.xaxis, title:{text:xLabel,font:{size:10}}},
+     yaxis:{...PLOTLY_LAYOUT.yaxis, title:{text:yLabel,font:{size:10}}}}, PLOTLY_CONFIG);
+}
+
+function updatePlots(r) {
+  plotLine('plot-pressure', r.x_mm, r.pressure_kpa, '#1D4ED8', 'x [mm]', 'P(x) [kPa]');
+  plotLine('plot-shear', r.x_mm, r.shear_pa, '#DC2626', 'x [mm]', 'τ(x) [Pa]');
+  plotLine('plot-film', r.x_mm, r.film_profile_um, '#16A34A', 'x [mm]', 't(x) [µm]');
+}
+
+// ============================================================
+// 比較表
+// ============================================================
+function updateCompareTable(r, cond) {
+  const br = baselineResult;
+  const bc = baselineCond;
+  const rows = [
+    ['噴射圧力','kPa', cond.plenum_pressure_kpa?.toFixed(1), bc.plenum_pressure_kpa?.toFixed(1), (cond.plenum_pressure_kpa-bc.plenum_pressure_kpa).toFixed(1)],
+    ['通板速度','m/min', cond.line_speed_mpm?.toFixed(0), bc.line_speed_mpm?.toFixed(0), (cond.line_speed_mpm-bc.line_speed_mpm).toFixed(0)],
+    ['推定片面目付','g/m²', r.cw_one_side_gm2.toFixed(1), br.cw_one_side_gm2.toFixed(1), (r.cw_one_side_gm2-br.cw_one_side_gm2).toFixed(1)],
+    ['推定膜厚','µm', r.film_thickness_um.toFixed(2), br.film_thickness_um.toFixed(2), (r.film_thickness_um-br.film_thickness_um).toFixed(2)],
+    ['Mach数','-', r.mach.toFixed(3), br.mach.toFixed(3), (r.mach-br.mach).toFixed(3)],
+    ['不確かさ','%', r.uncertainty_relative_percent.toFixed(0), br.uncertainty_relative_percent.toFixed(0), (r.uncertainty_relative_percent-br.uncertainty_relative_percent).toFixed(0)],
+    ['モデル信頼度','-', r.model_confidence, br.model_confidence, '-'],
+  ];
+  const tbody = rows.map(row => {
+    const diff = row[4];
+    const diffColor = (diff !== '-' && parseFloat(diff) > 0) ? '#DC2626' : (parseFloat(diff) < 0 ? '#16A34A' : '#374151');
+    return `<tr>
+      <td>${row[0]}</td><td style="color:#94A3B8">${row[1]}</td>
+      <td style="color:#1F4E79;font-weight:600">${row[2]}</td>
+      <td>${row[3]}</td>
+      <td style="color:${diffColor};font-weight:600">${diff}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('compare-table').innerHTML =
+    `<tr><th>項目</th><th>単位</th><th>現在</th><th>基準</th><th>差分</th></tr>${tbody}`;
+}
+
+// ============================================================
+// スイープ
+// ============================================================
+function setSweepRes(n) {
+  sweepRes = n;
+  [11,21,31].forEach(r => {
+    const btn = document.getElementById('res-'+r);
+    btn.style.background = (r===n) ? '#1F4E79' : '';
+    btn.style.color = (r===n) ? '#fff' : '';
+  });
+}
+setSweepRes(21);
+
+async function runSweep() {
+  const xKey = document.getElementById('sweep-x').value;
+  const yKey = document.getElementById('sweep-y').value;
+  if (xKey === yKey) { alert('X軸とY軸に異なるパラメータを選んでください'); return; }
+  const metric = document.getElementById('sweep-metric').value;
+  const cond = getCondition();
+  const n = sweepRes;
+
+  document.getElementById('sweep-progress').style.display = 'block';
+  document.getElementById('sweep-btn').disabled = true;
+
+  const paramRanges = {
+    plenum_pressure_kpa: [1, 100], line_speed_mpm: [10, 300],
+    nozzle_strip_distance_mm: [1, 50], nozzle_gap_mm: [0.2, 3.0]
+  };
+  const xRange = paramRanges[xKey];
+  const yRange = paramRanges[yKey];
+
+  const condJson = JSON.stringify(cond);
+  const resultJson = await pyodide.runPythonAsync(`
+import json, numpy as np
+_base = json.loads('''${condJson.replace(/'/g,"\\'")}''')
+_base['project_name'] = 'sweep'
+_xvals = np.linspace(${xRange[0]}, ${xRange[1]}, ${n}).tolist()
+_yvals = np.linspace(${yRange[0]}, ${yRange[1]}, ${n}).tolist()
+_matrix = []
+for _yv in _yvals:
+    _row = []
+    for _xv in _xvals:
+        _c = dict(_base)
+        _c['${xKey}'] = _xv
+        _c['${yKey}'] = _yv
+        _r = _service.analyze(_c)
+        _row.append(_r['${metric}'])
+    _matrix.append(_row)
+json.dumps({'x':_xvals, 'y':_yvals, 'z':_matrix})
+  `);
+
+  const { x, y, z } = JSON.parse(resultJson);
+  document.getElementById('sweep-progress').style.display = 'none';
+  document.getElementById('sweep-btn').disabled = false;
+  document.getElementById('sweep-result-card').style.display = 'block';
+
+  const metricLabels = { cw_one_side_gm2:'片面目付 [g/m²]', film_thickness_um:'液膜厚さ [µm]' };
+  const paramLabels = {
+    plenum_pressure_kpa:'噴射圧力 [kPa]', line_speed_mpm:'通板速度 [m/min]',
+    nozzle_strip_distance_mm:'ノズル距離 [mm]', nozzle_gap_mm:'ノズルすき間 [mm]'
+  };
+  document.getElementById('sweep-result-title').textContent = metricLabels[metric] + ' ヒートマップ';
+
+  Plotly.react('plot-heatmap',
+    [{ type:'contour', x, y, z, colorscale:'RdYlGn_r', contours:{showlabels:true,labelfont:{size:9,color:'white'}},
+       colorbar:{title:{text:metricLabels[metric],side:'right'},thickness:12,len:0.9} }],
+    { ...PLOTLY_LAYOUT, margin:{l:50,r:60,t:8,b:40},
+      xaxis:{...PLOTLY_LAYOUT.xaxis, title:{text:paramLabels[xKey],font:{size:10}}},
+      yaxis:{...PLOTLY_LAYOUT.yaxis, title:{text:paramLabels[yKey],font:{size:10}}} },
+    PLOTLY_CONFIG
+  );
+}
+
+// ============================================================
+// CSV校正
+// ============================================================
+async function loadCSV(file) {
+  if (!file) return;
+  const text = await file.text();
+  document.getElementById('csv-status').textContent = `読み込み中: ${file.name}`;
+  const escaped = text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+  const reportJson = await pyodide.runPythonAsync(`
+import json, io
+from gaswipelab.services.csv_service import read_actual_results_csv_with_report
+_df, _report = read_actual_results_csv_with_report(io.StringIO('''${escaped}'''), is_text=True)
+_calib_df = _df
+json.dumps({'rows':_report.rows_loaded,'dropped':_report.rows_dropped,'columns':list(_df.columns)})
+  `).catch(e => null);
+
+  if (!reportJson) {
+    document.getElementById('csv-status').textContent = '❌ 読み込みエラー。形式を確認してください。';
+    return;
+  }
+  const report = JSON.parse(reportJson);
+  document.getElementById('csv-status').textContent = `✅ ${file.name}  ${report.rows}件読み込み`;
+  document.getElementById('calib-btn-card').style.display = 'block';
+}
+
+async function runCalibration() {
+  document.getElementById('calib-btn-card').querySelector('button').disabled = true;
+  const resultJson = await pyodide.runPythonAsync(`
+import json
+_cal_result = _calib_service.calibrate(_calib_df)
+_cal_rows = _calib_service.coefficient_rows(_cal_result.coefficients, before=_cal_result.coefficients_before)
+json.dumps({
+  'metrics_before': {'mae':_cal_result.metrics_before.mae,'mape':_cal_result.metrics_before.mape,
+                      'rmse':_cal_result.metrics_before.rmse,'r2':_cal_result.metrics_before.r2},
+  'metrics_after': {'mae':_cal_result.metrics_after.mae,'mape':_cal_result.metrics_after.mape,
+                     'rmse':_cal_result.metrics_after.rmse,'r2':_cal_result.metrics_after.r2},
+  'coeff_rows': _cal_rows,
+  'actual': _calib_df['measured_cw_one_side_gm2'].tolist(),
+  'predicted_before': _calib_service.predict_dataframe(_calib_df).tolist(),
+  'predicted_after': _cal_result.predicted_after.tolist(),
+  'residual': _cal_result.residual_after.tolist(),
+  'coefficients': _cal_result.coefficients,
+})
+  `);
+  calibResult = JSON.parse(resultJson);
+  document.getElementById('calib-btn-card').querySelector('button').disabled = false;
+  document.getElementById('calib-result-card').style.display = 'block';
+
+  // 精度表
+  const mb = calibResult.metrics_before, ma = calibResult.metrics_after;
+  const imp = (b,a) => b===0 ? '-' : ((b-a)/b*100).toFixed(1)+'%';
+  document.getElementById('metrics-table').innerHTML = `
+    <tr><th>指標</th><th>校正前</th><th>校正後</th><th>改善率</th></tr>
+    <tr><td>MAE</td><td>${mb.mae.toFixed(2)}</td><td>${ma.mae.toFixed(2)}</td><td>${imp(mb.mae,ma.mae)}</td></tr>
+    <tr><td>MAPE%</td><td>${mb.mape.toFixed(1)}</td><td>${ma.mape.toFixed(1)}</td><td>${imp(mb.mape,ma.mape)}</td></tr>
+    <tr><td>RMSE</td><td>${mb.rmse.toFixed(2)}</td><td>${ma.rmse.toFixed(2)}</td><td>${imp(mb.rmse,ma.rmse)}</td></tr>
+    <tr><td>R²</td><td>${mb.r2.toFixed(3)}</td><td>${ma.r2.toFixed(3)}</td><td>+${(ma.r2-mb.r2).toFixed(3)}</td></tr>
+  `;
+
+  // 係数表
+  document.getElementById('coeff-table').innerHTML = `<tr><th>記号</th><th>校正前</th><th>校正後</th></tr>` +
+    Object.entries(calibResult.coefficients).map(([k,v]) => {
+      const before = calibResult.coeff_rows.find ? '-' : '-';
+      return `<tr><td>${k}</td><td>-</td><td style="color:#1F4E79;font-weight:600">${v.toFixed(4)}</td></tr>`;
+    }).join('');
+
+  // Scatter plot
+  const actual = calibResult.actual;
+  const predAfter = calibResult.predicted_after;
+  const allVals = [...actual, ...predAfter];
+  const mn = Math.min(...allVals), mx = Math.max(...allVals);
+  Plotly.react('plot-scatter', [
+    { x:actual, y:predAfter, mode:'markers', marker:{color:'#1D4ED8',size:6,opacity:0.7} },
+    { x:[mn,mx], y:[mn,mx], mode:'lines', line:{color:'#9CA3AF',dash:'dash'} }
+  ], {...PLOTLY_LAYOUT, xaxis:{...PLOTLY_LAYOUT.xaxis,title:{text:'実測値 [g/m²]',font:{size:10}}},
+      yaxis:{...PLOTLY_LAYOUT.yaxis,title:{text:'予測値 [g/m²]',font:{size:10}}}}, PLOTLY_CONFIG);
+
+  // Histogram
+  const res = calibResult.residual;
+  Plotly.react('plot-hist', [
+    { x:res, type:'histogram', nbinsx:15, marker:{color:'#93C5FD',line:{color:'#1D4ED8',width:1}} }
+  ], {...PLOTLY_LAYOUT, shapes:[{type:'line',x0:0,x1:0,y0:0,y1:1,yref:'paper',line:{color:'#DC2626',dash:'dash'}}],
+      xaxis:{...PLOTLY_LAYOUT.xaxis,title:{text:'残差 [g/m²]',font:{size:10}}},
+      yaxis:{...PLOTLY_LAYOUT.yaxis,title:{text:'count',font:{size:10}}}}, PLOTLY_CONFIG);
+
+  document.getElementById('calib-memo').textContent = `データ数：${actual.length}件 | RMSE(校正後)：${ma.rmse.toFixed(2)} g/m²`;
+}
+
+function saveCalibration() {
+  if (!calibResult) return;
+  pyodide.runPythonAsync(`
+from gaswipelab.services.settings_service import save_calibration_coefficients
+import json
+save_calibration_coefficients(${JSON.stringify(calibResult.coefficients)})
+  `);
+  alert('✅ 校正値をブラウザに保存しました。次回起動時も反映されます。');
+}
+
+// ============================================================
+// 逆算
+// ============================================================
+async function runReverse() {
+  const target = parseFloat(document.getElementById('rev-target').value);
+  const speed = parseFloat(document.getElementById('rev-speed').value);
+  const width = parseFloat(document.getElementById('rev-width').value);
+  const bath = parseFloat(document.getElementById('rev-bath').value);
+  const gasType = document.getElementById('gas-type').value;
+
+  document.getElementById('rev-progress').style.display = 'block';
+  document.getElementById('rev-btn').disabled = true;
+
+  const resultJson = await pyodide.runPythonAsync(`
+import json, numpy as np
+_target_cw = ${target}
+_base = {'line_speed_mpm':${speed},'strip_width_mm':${width},'bath_temp_c':${bath},'gas_type':'${gasType}','project_name':'reverse','target_cw_one_side_gm2':_target_cw}
+_candidates = []
+_p_list = np.linspace(5, 80, 12)
+_z_list = np.linspace(3, 30, 12)
+_g_list = np.linspace(0.3, 2.5, 12)
+for _p in _p_list:
+    for _z in _z_list:
+        for _g in _g_list:
+            _c = dict(_base)
+            _c['plenum_pressure_kpa'] = float(_p)
+            _c['nozzle_strip_distance_mm'] = float(_z)
+            _c['nozzle_gap_mm'] = float(_g)
+            _r = _service.analyze(_c)
+            _err = abs(_r['cw_one_side_gm2'] - _target_cw)
+            _candidates.append({'err':_err,'cw':_r['cw_one_side_gm2'],'p':float(_p),'z':float(_z),'g':float(_g),'splash':_r['splash_level'],'conf':_r['model_confidence'],'unc':_r['uncertainty_relative_percent']})
+_candidates.sort(key=lambda x: x['err'])
+_top3 = []
+_seen = []
+for _ca in _candidates:
+    _key = (round(_ca['p']),round(_ca['z'],1),round(_ca['g'],1))
+    if _key not in _seen:
+        _seen.append(_key)
+        _top3.append(_ca)
+    if len(_top3) >= 3:
+        break
+json.dumps(_top3)
+  `);
+
+  document.getElementById('rev-progress').style.display = 'none';
+  document.getElementById('rev-btn').disabled = false;
+  document.getElementById('rev-result-card').style.display = 'block';
+
+  const top3 = JSON.parse(resultJson);
+  const medals = ['🥇','🥈','🥉'];
+  const splashBadge = s => s==='低'?'badge-low':s==='中'?'badge-mid':'badge-high';
+  const confBadge = c => c==='高'?'badge-low':c==='中'?'badge-mid':'badge-high';
+  document.getElementById('rev-results').innerHTML = top3.map((c, i) => `
+    <div style="background:#F8FAFC;border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="font-size:15px;font-weight:700;color:#1F4E79;margin-bottom:6px">${medals[i]} 推定目付 ${c.cw.toFixed(1)} g/m²（誤差 ${c.err.toFixed(1)} g/m²）</div>
+      <div class="result-row"><span class="result-label">噴射圧力</span><span class="result-value">${c.p.toFixed(1)} kPa</span></div>
+      <div class="result-row"><span class="result-label">ノズル距離</span><span class="result-value">${c.z.toFixed(1)} mm</span></div>
+      <div class="result-row"><span class="result-label">ノズルすき間</span><span class="result-value">${c.g.toFixed(2)} mm</span></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <span class="badge ${splashBadge(c.splash)}">スプラッシュ：${c.splash}</span>
+        <span class="badge ${confBadge(c.conf)}">信頼度：${c.conf}</span>
+        <span class="badge badge-ok">±${c.unc.toFixed(0)}%</span>
+      </div>
+      <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="applyCondition(${c.p},${c.z},${c.g})">📋 条件入力へ反映</button>
+    </div>
+  `).join('');
+}
+
+function applyCondition(pressure, distance, gap) {
+  document.getElementById('range-plenum_pressure_kpa').value = pressure;
+  document.getElementById('val-plenum_pressure_kpa').textContent = pressure.toFixed(1);
+  document.getElementById('range-nozzle_strip_distance_mm').value = distance;
+  document.getElementById('val-nozzle_strip_distance_mm').textContent = distance.toFixed(1);
+  document.getElementById('range-nozzle_gap_mm').value = gap;
+  document.getElementById('val-nozzle_gap_mm').textContent = gap.toFixed(2);
+  switchTab('input');
+}
+
+// Drag & drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); loadCSV(e.dataTransfer.files[0]); });
+
+// PWA Service Worker (オフライン対応)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// 起動
+init().catch(err => {
+  document.getElementById('load-status').textContent = 'エラー: ' + err.message;
+  console.error(err);
+});
+</script>
+</body>
+</html>
