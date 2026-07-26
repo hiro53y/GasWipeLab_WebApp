@@ -1,9 +1,11 @@
-// Service Worker — GasWipeLab v2.2 オフラインキャッシュ
-const CACHE = 'gaswipelab-v2.3';
+// Service Worker — GasWipeLab v3.0 オフラインキャッシュ
+const CACHE = 'gaswipelab-v3.0';
 const STATIC = [
   './',
   './index.html',
+  './manifest.json',
   './python/gaswipelab/__init__.py',
+  './python/gaswipelab/web_api.py',
   './python/gaswipelab/models/__init__.py',
   './python/gaswipelab/models/calibration_model.py',
   './python/gaswipelab/models/coating_weight.py',
@@ -18,6 +20,7 @@ const STATIC = [
   './python/gaswipelab/services/analysis_service.py',
   './python/gaswipelab/services/calibration_service.py',
   './python/gaswipelab/services/csv_service.py',
+  './python/gaswipelab/services/design_service.py',
   './python/gaswipelab/services/settings_service.py',
   './python/gaswipelab/utils/__init__.py',
   './python/gaswipelab/utils/paths.py',
@@ -25,6 +28,7 @@ const STATIC = [
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll(STATIC))
   );
@@ -32,24 +36,28 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-// キャッシュファースト（Pyodide本体はCDNキャッシュに任せる）
+// 自前ファイルはネットワーク優先（更新を確実に取り込み、オフライン時はキャッシュ）。
+// CDN（Pyodide・Plotly）はネットワーク優先でブラウザキャッシュに任せる。
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
   const url = event.request.url;
-  // CDNリソース（Pyodide・Plotly・Tailwind）はネットワーク優先
   if (url.includes('cdn.') || url.includes('jsdelivr') || url.includes('pyodide')) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
-    );
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
     return;
   }
-  // 自前ファイルはキャッシュファースト
   event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
+    fetch(event.request)
+      .then(response => {
+        const copy = response.clone();
+        caches.open(CACHE).then(cache => cache.put(event.request, copy)).catch(() => {});
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
