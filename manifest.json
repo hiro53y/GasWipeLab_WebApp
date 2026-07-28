@@ -1,7 +1,7 @@
 {
-  "name": "GasWipeLab v3.0 — ワイピング条件設計",
+  "name": "GasWipeLab v4.0 — ワイピング条件設計",
   "short_name": "GasWipeLab",
-  "description": "溶融亜鉛めっきライン ガスワイピングの操業条件を事前設定するツール",
+  "description": "溶融亜鉛めっきライン ガスワイピングの操業条件を事前設定するツール（実機データ学習モデル搭載）",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

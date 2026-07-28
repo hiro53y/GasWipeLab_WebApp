@@ -1,5 +1,5 @@
-// Service Worker — GasWipeLab v3.0 オフラインキャッシュ
-const CACHE = 'gaswipelab-v3.0';
+// Service Worker — GasWipeLab v4.0 オフラインキャッシュ
+const CACHE = 'gaswipelab-v4.0';
 const STATIC = [
   './',
   './index.html',
@@ -25,6 +25,20 @@ const STATIC = [
   './python/gaswipelab/utils/__init__.py',
   './python/gaswipelab/utils/paths.py',
   './python/gaswipelab/utils/validation.py',
+  './python/gaswipelab/ml/__init__.py',
+  './python/gaswipelab/ml/cityhash.py',
+  './python/gaswipelab/ml/catboost_runtime.py',
+  './python/gaswipelab/ml/ood.py',
+  './python/gaswipelab/ml/predictor.py',
+  './python/gaswipelab/services/machine_design_service.py',
+  './models/manifest.json',
+  './models/reference.json',
+  './models/GI_CF.json',
+  './models/GI_CG.json',
+  './models/GI_CH.json',
+  './models/GL_CF.json',
+  './models/GL_CG.json',
+  './models/GL_CH.json',
 ];
 
 self.addEventListener('install', event => {

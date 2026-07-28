@@ -32,6 +32,14 @@ from gaswipelab.services.design_service import (
     SPEED_MIN_MPM,
     DesignService,
 )
+from gaswipelab.ml.ood import RangeChecker
+from gaswipelab.ml.predictor import ERROR_REFERENCE, GasWipingPredictor, OutOfScopeError
+from gaswipelab.services.machine_design_service import (
+    FIXED_NOTE,
+    INTERPOLATION_NOTE,
+    LEVERS,
+    MachineDesignService,
+)
 from gaswipelab.services.settings_service import (
     load_base_model_coefficients,
     load_calibration_coefficients,
@@ -42,6 +50,34 @@ from gaswipelab.services.settings_service import (
 _analysis = AnalysisService()
 _calibration = CalibrationService(_analysis)
 _design = DesignService(_analysis)
+
+# --- 実機モデル（v4.0）。モデルJSONが重いので初回アクセス時に読み込む ---
+_MODEL_DIRS = ("/models", "models", "deliverables/GasWipeLab_WebApp/models")
+_machine_state: dict[str, Any] = {"predictor": None, "checker": None, "service": None, "reference": None}
+
+
+def _model_dir() -> str:
+    from pathlib import Path
+
+    for candidate in _MODEL_DIRS:
+        if (Path(candidate) / "manifest.json").exists():
+            return candidate
+    raise FileNotFoundError("実機モデル（models/manifest.json）が見つかりません。")
+
+
+def _machine() -> MachineDesignService:
+    if _machine_state["service"] is None:
+        directory = _model_dir()
+        reference = json.loads((__import__("pathlib").Path(directory) / "reference.json").read_text(encoding="utf-8"))
+        predictor = GasWipingPredictor(directory)
+        checker = RangeChecker(reference)
+        _machine_state.update({
+            "predictor": predictor,
+            "checker": checker,
+            "reference": reference,
+            "service": MachineDesignService(predictor, checker),
+        })
+    return _machine_state["service"]
 
 # 校正タブの状態（CSV読み込み → 校正実行 → 保存）
 _state: dict[str, Any] = {"df": None, "result": None, "before": None}
@@ -197,6 +233,108 @@ def coating_map(payload_json: str) -> str:
         payload = json.loads(payload_json)
         points = int(payload.pop("points", 21))
         return _ok({"map": _design.coating_map(payload, points=points)})
+    except Exception as exc:
+        return _error(exc)
+
+
+# ==================================================================
+# 実機モデル（実機プロコンデータ由来）
+# ==================================================================
+def ml_bootstrap() -> str:
+    """ライン・付着量記号・カテゴリ選択肢・レンジ・誤差参考値をまとめて返す。"""
+    try:
+        service = _machine()
+        reference = _machine_state["reference"]
+        lines = {}
+        for line, info in reference["lines"].items():
+            lines[line] = {
+                "n": info["n"],
+                "features": info["features"],
+                "categories": info["categories"],
+                "flow": info["flow"],
+                "codes": {
+                    code: {"stats": entry["stats"]}
+                    for code, entry in info["codes"].items()
+                },
+            }
+        return _ok({
+            "model_version": service.predictor.model_version,
+            "lines": lines,
+            "levers": [{"key": x.key, "label": x.label, "unit": x.unit, "driver": x.driver} for x in LEVERS],
+            "error_reference": ERROR_REFERENCE,
+            "fixed_note": FIXED_NOTE,
+            "note": INTERPOLATION_NOTE,
+        })
+    except Exception as exc:
+        return _error(exc)
+
+
+def ml_defaults(payload_json: str) -> str:
+    """付着量記号を選んだときの初期条件（その記号の実績中央値）。"""
+    try:
+        payload = json.loads(payload_json)
+        line = str(payload.get("line", "GI")).strip()
+        code = str(payload.get("coating_code", "")).strip()
+        service = _machine()
+        checker = _machine_state["checker"]
+        reference = _machine_state["reference"]
+        entry = reference["lines"].get(line, {}).get("codes", {}).get(code)
+        categories = {}
+        if entry:
+            for name, options in entry["categories"].items():
+                categories[name] = options[0][0] if options else "__MISSING__"
+        condition = dict(checker.defaults(line, code))
+        condition.update(categories)
+        condition["line"] = line
+        condition["coating_code"] = code
+        stats = checker.code_stats(line, code) or {}
+        return _ok({
+            "condition": condition,
+            "stats": stats,
+            "target_ch_gm2": stats.get("CH_median"),
+            "features": (entry or {}).get("features", {}),
+        })
+    except Exception as exc:
+        return _error(exc)
+
+
+def ml_predict(payload_json: str) -> str:
+    try:
+        condition = json.loads(payload_json)
+        return _ok({"prediction": _machine().predict(condition)})
+    except OutOfScopeError as exc:
+        return _dumps({"ok": False, "out_of_scope": True, "error": str(exc)})
+    except Exception as exc:
+        return _error(exc)
+
+
+def ml_design(payload_json: str) -> str:
+    try:
+        payload = json.loads(payload_json)
+        target = float(payload.pop("target_ch_gm2", 0.0))
+        return _ok({"design": _machine().design(payload, target)})
+    except OutOfScopeError as exc:
+        return _dumps({"ok": False, "out_of_scope": True, "error": str(exc)})
+    except Exception as exc:
+        return _error(exc)
+
+
+def ml_compare(payload_json: str) -> str:
+    try:
+        payload = json.loads(payload_json)
+        return _ok({"comparison": _machine().compare(payload["before"], payload["after"])})
+    except OutOfScopeError as exc:
+        return _dumps({"ok": False, "out_of_scope": True, "error": str(exc)})
+    except Exception as exc:
+        return _error(exc)
+
+
+def ml_curves(payload_json: str) -> str:
+    """3本のレバーそれぞれについてCH応答カーブを返す。"""
+    try:
+        condition = json.loads(payload_json)
+        service = _machine()
+        return _ok({"curves": {x.key: service.response_curve(condition, x.key) for x in LEVERS}})
     except Exception as exc:
         return _error(exc)
 

@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GasWipeLab">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>GasWipeLab v3.0 — ワイピング条件設計</title>
+<title>GasWipeLab v4.0 — ワイピング条件設計</title>
 <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <style>
@@ -66,13 +66,53 @@ nav.bottom{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + env
 .nav-btn.active{color:var(--brand)}
 .nav-btn.active::before{content:'';position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--brand)}
 @media(min-width:860px){
-  /* ヘッダー直下にドッキングさせる（--hdr-h は実際のヘッダー高さをJSが設定する） */
-  nav.bottom{position:sticky;top:var(--hdr-h,64px);bottom:auto;height:auto;border-top:none;border-bottom:1px solid var(--line);
+  /* ヘッダー＋モード切替バーの直下にドッキングさせる（高さはJSが実測して設定する） */
+  nav.bottom{position:sticky;top:calc(var(--hdr-h,64px) + var(--mode-h,64px));bottom:auto;height:auto;border-top:none;border-bottom:1px solid var(--line);
     max-width:1120px;margin:0 auto;box-shadow:none;background:var(--bg);gap:6px;padding:10px 12px 0}
   .nav-btn{flex-direction:row;gap:8px;font-size:13px;padding:11px 10px;border-radius:10px 10px 0 0;background:#fff;border:1px solid var(--line);border-bottom:none}
   .nav-btn.active{background:#fff;color:var(--brand)}
   #main{padding-bottom:40px}
 }
+
+/* ---------- モード切替 ---------- */
+.modebar{position:sticky;top:var(--hdr-h,64px);z-index:75;max-width:1120px;margin:0 auto;
+  display:flex;gap:8px;padding:10px 12px 0;background:var(--bg)}
+.mode-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 8px;cursor:pointer;
+  font-size:13.5px;font-weight:700;color:#64748B;background:#fff;border:1px solid var(--line);border-radius:10px}
+.mode-btn span{font-size:10.5px;font-weight:500;color:#94A3B8}
+.mode-btn.active{color:#fff;background:var(--brand);border-color:var(--brand)}
+.mode-btn.active span{color:rgba(255,255,255,.82)}
+
+/* ---------- 実機モード ---------- */
+.mlgrid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:700px){.mlgrid{grid-template-columns:1fr 1fr}}
+.selrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed #EEF2F6}
+.selrow:last-child{border-bottom:none}
+.selrow .fl{flex:1;min-width:0}
+.selrow .fl b{display:block;font-size:13.5px;font-weight:600;color:#1E293B}
+.selrow .fl span{display:block;font-size:11px;color:var(--muted);margin-top:1px;line-height:1.5}
+.selrow select,.selrow input{flex:0 0 148px;padding:8px 9px;font-size:14px;font-weight:600;text-align:right;
+  border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font-family:inherit}
+.selrow select{text-align:left}
+.selrow input.ood{border-color:var(--bad);background:var(--bad-bg)}
+.selrow input.caution{border-color:var(--warn);background:var(--warn-bg)}
+.rangehint{font-size:10.5px;color:#94A3B8;text-align:right;margin-top:2px}
+.bigval{font-size:30px;font-weight:800;color:var(--brand);line-height:1.1}
+.bigval small{font-size:13px;font-weight:600;color:var(--muted);margin-left:4px}
+.sidebyside{display:flex;gap:10px;flex-wrap:wrap}
+.sidebyside>div{flex:1;min-width:120px;background:var(--brand-soft);border-radius:10px;padding:10px 12px}
+.sidebyside .lab{font-size:11px;color:var(--muted);font-weight:600}
+.sidebyside .num{font-size:19px;font-weight:800;color:var(--brand);margin-top:2px}
+.statuspill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:700}
+.statuspill.ok{background:var(--ok-bg);color:var(--ok)}
+.statuspill.caution{background:var(--warn-bg);color:var(--warn)}
+.statuspill.ood{background:var(--bad-bg);color:var(--bad)}
+.leverstep{border-left:3px solid var(--line);padding:8px 0 8px 12px;margin:8px 0}
+.leverstep.hit{border-left-color:var(--ok)}
+.leverstep.miss{border-left-color:#CBD5E1;opacity:.72}
+.leverstep .t{font-size:13px;font-weight:700;color:var(--ink)}
+.leverstep .d{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.6}
+.plotbox{width:100%;height:260px}
 
 /* ---------- cards ---------- */
 .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(226,232,240,.8)}
@@ -216,7 +256,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <!-- ============ loading ============ -->
 <div id="loading">
   <div class="spinner"></div>
-  <h1>GasWipeLab v3.0</h1>
+  <h1>GasWipeLab v4.0</h1>
   <div id="load-status">初期化中…（初回のみ 30 秒ほどかかります）</div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:4%"></div></div>
 </div>
@@ -227,15 +267,25 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <header class="app" id="app-header" style="display:none">
   <div>
     <div class="logo">GasWipeLab</div>
-    <div class="ver">ワイピング条件 事前設定ツール v3.0</div>
+    <div class="ver">ワイピング条件 事前設定ツール v4.0</div>
   </div>
   <div class="spacer"></div>
   <button class="cal-badge" id="cal-badge" onclick="switchTab('calib')">未校正</button>
 </header>
 
+<!-- ============ モード切替 ============ -->
+<div class="modebar" id="app-mode" style="display:none">
+  <button class="mode-btn active" id="mode-ml" onclick="switchMode('ml')">
+    実機モード<span>実績データ 14,390件</span>
+  </button>
+  <button class="mode-btn" id="mode-phys" onclick="switchMode('phys')">
+    理論モード<span>物理モデル</span>
+  </button>
+</div>
+
 <!-- ============ nav ============ -->
 <nav class="bottom" id="app-nav" style="display:none">
-  <button class="nav-btn active" id="nav-design" onclick="switchTab('design')">
+  <button class="nav-btn" id="nav-design" onclick="switchTab('design')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>条件設計
   </button>
   <button class="nav-btn" id="nav-quick" onclick="switchTab('quick')">
@@ -249,18 +299,127 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   </button>
 </nav>
 
+<nav class="bottom" id="app-nav-ml" style="display:none">
+  <button class="nav-btn active" id="nav-mldesign" onclick="switchTab('mldesign')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>条件設計
+  </button>
+  <button class="nav-btn" id="nav-mlpredict" onclick="switchTab('mlpredict')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-5 3 3 5-7"/></svg>予測
+  </button>
+  <button class="nav-btn" id="nav-mlcompare" onclick="switchTab('mlcompare')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v18M16 3v18M3 8h18M3 16h18"/></svg>条件比較
+  </button>
+</nav>
+
 <div id="main" style="display:none">
+
+<!-- ================================================================
+     実機 TAB 1 : 条件設計（実績データ）
+================================================================= -->
+<div id="tab-mldesign" class="tab-content active">
+
+  <details id="mlhowto">
+    <summary>はじめに：このモードでできること</summary>
+    <div class="body">
+      <div class="note plain" style="margin-top:0">
+        実機プロコンの <b>6か月・14,390件</b> の実績から学習したモデルで、
+        <b>いまのラインで実際に出る付着量</b> を予測し、目標に合わせる操作量を出します。
+      </div>
+      <div class="kv"><span><b>条件設計</b>（このタブ）</span><b style="text-align:right">ライン・付着量記号・製品条件を入れると、<br>目標付着量に合わせる操作量を提案する</b></div>
+      <div class="kv"><span><b>予測</b></span><b style="text-align:right">条件を入れて表面／裏面／両面合計の付着量を予測する。<br>実績範囲の内か外かも判定する</b></div>
+      <div class="kv"><span><b>条件比較</b></span><b style="text-align:right">いまの条件と変更後の条件を並べ、<br>どの変数がどれだけ効いたかを見る</b></div>
+      <div class="kv"><span><b>理論モード</b></span><b style="text-align:right">実績のない条件を物理式で検討する。<br>ガス種・ノズルすき間など実績データに無い項目を扱える</b></div>
+    </div>
+  </details>
+
+  <div class="card">
+    <h2><span class="step-tag">1</span>製品とラインを選ぶ</h2>
+    <p class="sub">付着量記号を選ぶと、その記号の <b>実績中央値</b> が各項目の初期値として入ります。</p>
+    <div id="ml-select"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-tag">2</span>操業条件</h2>
+    <p class="sub">
+      実績の操業範囲を右側に表示しています。<b>Yノズル位置は設備座標</b>で、
+      数値が大きいほど鋼帯から遠い側です（鋼帯表面からの絶対距離ではありません）。
+    </p>
+    <div id="ml-fields"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-tag">3</span>目標付着量</h2>
+    <p class="sub">付着量記号に対応する <b>両面合計</b> で入力します（片面平均ではありません）。</p>
+    <div id="ml-target"></div>
+    <div class="chips" id="ml-target-chips"></div>
+  </div>
+
+  <button class="btn btn-primary" onclick="runMlDesign()" id="mldesign-btn">
+    この目標に合わせる操作量を計算する
+  </button>
+
+  <div id="mldesign-out" style="margin-top:12px"></div>
+
+  <div class="disclaimer">
+    実機モデルは過去実績の統計的補間です。設備条件を独立に動かしたときの因果効果を保証するものではありません。
+  </div>
+</div>
+
+<!-- ================================================================
+     実機 TAB 2 : 予測
+================================================================= -->
+<div id="tab-mlpredict" class="tab-content">
+  <div class="card">
+    <h2>この条件で出る付着量</h2>
+    <p class="sub">「条件設計」で入力した条件をそのまま使います。値を変えるとその場で予測し直します。</p>
+    <div id="mlpredict-out"></div>
+  </div>
+  <div class="card">
+    <h2>操作量を振ったときの応答</h2>
+    <p class="sub">
+      いまの条件から1項目だけを実績範囲で振ったときの <b>両面合計付着量</b> です。
+      赤い破線が目標、●が現在条件、薄い帯が実績のP10〜P90です。
+    </p>
+    <div id="plot-ml-position" class="plotbox"></div>
+    <div id="plot-ml-speed" class="plotbox"></div>
+    <div id="plot-ml-pressure" class="plotbox"></div>
+  </div>
+</div>
+
+<!-- ================================================================
+     実機 TAB 3 : 条件比較
+================================================================= -->
+<div id="tab-mlcompare" class="tab-content">
+  <div class="card">
+    <h2>変更前と変更後をくらべる</h2>
+    <p class="sub">
+      基準は「条件設計」で入力した条件です。下の項目を変えると、予測付着量がどれだけ動くかを表示します。
+    </p>
+    <div id="mlcompare-fields"></div>
+    <button class="btn btn-primary" style="margin-top:12px" onclick="runMlCompare()">比較する</button>
+  </div>
+  <div id="mlcompare-out"></div>
+  <div class="note warn" id="mlcompare-note">
+    圧力・流量・Yノズル位置は実績上たがいに連動して動かされています。1項目だけを大きく動かした結果は、
+    実績にない組合せになるため信頼度が下がります。
+  </div>
+</div>
 
 <!-- ================================================================
      TAB 1 : 条件設計
 ================================================================= -->
-<div id="tab-design" class="tab-content active">
+<div id="tab-design" class="tab-content">
 
   <details id="howto">
-    <summary>はじめに：4つのタブの使い分け</summary>
+    <summary>はじめに：理論モードの使い分け</summary>
     <div class="body">
-      <div class="note plain" style="margin-top:0">
-        このツールは <b>実機を動かす前に操業条件を決める</b> ためのものです。基本は「条件設計」だけ使えば足ります。
+      <div class="note warn" style="margin-top:0">
+        <b>理論モードは文献ベースの物理モデルです。</b>実機の実績データは使っていません。
+        実機GI/GLの条件を決めるときは <b>実機モード</b> を使ってください。
+        こちらは、実績データに無い条件（ガス種・ノズルすき間の変更など）や、
+        実績範囲の外を検討したいときに使います。<br>
+        <b>GL（ガルバリウム）には適用できません。</b>浴温が約600℃で、この物理モデルが前提とする
+        溶融亜鉛（420〜500℃）の物性域から外れるためです。
       </div>
       <div class="kv"><span><b>条件設計</b>（このタブ）</span><b style="text-align:right">すき間・速度・浴温・板幅・ガス種を固定し、<br>目標目付を出す「噴射圧力」と「ノズル距離」を求める</b></div>
       <div class="kv"><span><b>かんたん</b></span><b style="text-align:right">速度もすき間も未定のとき。ガス種・板幅・目標目付だけで<br>条件一式をまるごと提案する</b></div>
@@ -478,6 +637,7 @@ const FIELDS = {
 };
 const TARGET_PRESETS = [30, 45, 60, 90, 120];
 const STORE_KEY = 'gaswipelab_ui_v3';
+const ML_STORE_KEY = 'gaswipelab_ml_v4';
 
 let pyodide = null;
 let designResult = null;
@@ -523,14 +683,27 @@ async function py(fn, payload){
   if (!data.ok) throw new Error(data.error);
   return data;
 }
-function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
+function saveState(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    localStorage.setItem(ML_STORE_KEY, JSON.stringify({
+      mode: mlState.mode, tab: mlState.tab, line: mlState.line,
+      code: mlState.code, target: mlState.target,
+    }));
+  }catch(e){}
+}
 function loadState(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return;
-    const s = JSON.parse(raw);
-    ['fixed','quick','check'].forEach(k => { if (s[k]) Object.assign(state[k], s[k]); });
-    if (typeof s.target === 'number') state.target = s.target;
+    if (raw){
+      const s = JSON.parse(raw);
+      ['fixed','quick','check'].forEach(k => { if (s[k]) Object.assign(state[k], s[k]); });
+      if (typeof s.target === 'number') state.target = s.target;
+    }
+  }catch(e){}
+  try{
+    const raw = localStorage.getItem(ML_STORE_KEY);
+    if (raw) Object.assign(mlState, JSON.parse(raw));
   }catch(e){}
 }
 
@@ -660,15 +833,361 @@ function setGasSilent(id, gas){
 }
 
 /* ==================================================================
-   タブ切替
+   モード／タブ切替
 ================================================================== */
+const PHYS_TABS = ['design','quick','check','calib'];
+const ML_TABS   = ['mldesign','mlpredict','mlcompare'];
+
+function switchMode(mode){
+  mlState.mode = mode;
+  const ml = mode === 'ml';
+  $('mode-ml').classList.toggle('active', ml);
+  $('mode-phys').classList.toggle('active', !ml);
+  $('app-nav-ml').style.display = ml ? 'flex' : 'none';
+  $('app-nav').style.display    = ml ? 'none' : 'flex';
+  saveState();
+  switchTab(ml ? (mlState.tab || 'mldesign') : 'design');
+}
+
 function switchTab(name){
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   $('tab-'+name).classList.add('active');
-  $('nav-'+name).classList.add('active');
+  const btn = $('nav-'+name);
+  if (btn) btn.classList.add('active');
   window.scrollTo({top:0, behavior:'instant'});
+  if (ML_TABS.includes(name)) mlState.tab = name;
+  saveState();
   if (name==='check' && checkDirty) runCheck(false);
+  if (name==='mlpredict') runMlPredict();
+  if (name==='mlcompare') buildMlCompareFields();
+}
+
+/* ==================================================================
+   実機モード（実績データ由来モデル）
+================================================================== */
+let mlBoot = null;
+let mlDesignResult = null;
+
+const mlState = {
+  mode: 'ml', tab: 'mldesign',
+  line: 'GI', code: 'Z08', target: null,
+  cond: {},      // 条件設計タブの条件（実機モードの基準）
+  compare: {},   // 条件比較タブの「変更後」
+};
+
+/* 表示する数値項目。group: main=操作量 / prod=製品条件 / other=詳細 */
+const ML_FIELDS = {
+  '表ノズル位置平均_mm':      {label:'Yノズル位置（表）', hint:'設備Y座標。大きいほど鋼帯から遠い', dec:2, group:'main'},
+  '裏ノズル位置平均_mm':      {label:'Yノズル位置（裏）', hint:'設備Y座標。大きいほど鋼帯から遠い', dec:2, group:'main'},
+  '表ノズル圧力_kPa':        {label:'ノズル圧力（表）', hint:'', dec:2, group:'main'},
+  '裏ノズル圧力_kPa':        {label:'ノズル圧力（裏）', hint:'', dec:2, group:'main'},
+  '中央速度_m_min':          {label:'通板速度', hint:'ラインスピード', dec:1, group:'main'},
+  'ノズル吹込流量_Nm3H':      {label:'ノズル吹込流量', hint:'表裏合計の実測流量（Nm³/h・暫定定義）。圧力と連動する', dec:0, group:'main'},
+  '製品板厚_mm':             {label:'製品板厚', hint:'', dec:2, group:'prod'},
+  '製品板幅_mm':             {label:'製品板幅', hint:'', dec:0, group:'prod'},
+  '2JC進入板温_IR_C':        {label:'2JC進入板温', hint:'めっき浴に入る直前の板温（赤外線）', dec:0, group:'prod'},
+  '使用ポット温度_C':         {label:'ポット温度', hint:'ラインで決まる', dec:0, group:'prod'},
+  'ポット張力_kN':           {label:'ポット張力', hint:'', dec:2, group:'other'},
+  'ノズル高さ平均_mm':        {label:'ノズル高さ', hint:'浴面からノズルスリットまでの高さ', dec:1, group:'other'},
+  'ノズル空気温度_C':         {label:'ノズル空気温度', hint:'', dec:0, group:'other'},
+  'コレクティングロール平均_mm':{label:'コレクティングロール位置', hint:'', dec:2, group:'other'},
+  'コレクティングロールWS-DS_mm':{label:'コレクティングロール WS-DS差', hint:'', dec:2, group:'other'},
+  '表ノズル位置WS-DS_mm':     {label:'Yノズル位置 表のWS-DS差', hint:'', dec:2, group:'other'},
+  '裏ノズル位置WS-DS_mm':     {label:'Yノズル位置 裏のWS-DS差', hint:'', dec:2, group:'other'},
+  'ノズル高さWS-DS_mm':       {label:'ノズル高さ WS-DS差', hint:'', dec:2, group:'other'},
+};
+const ML_CATS = {
+  'V:スパングル':'スパングル', 'W:化成処理':'化成処理', 'X:カーボン量':'カーボン量',
+  'Y:類別':'類別', 'Z:材質':'材質', 'AB:規格':'規格', 'AC:用途':'用途',
+  'AD:生産仕様No.':'生産仕様No.',
+};
+
+function mlLineInfo(){ return mlBoot ? mlBoot.lines[mlState.line] : null; }
+
+function mlRange(feature){
+  const info = mlLineInfo();
+  if (!info) return null;
+  const c = info.codes[mlState.code];
+  return (c && c.featureRanges && c.featureRanges[feature]) || info.features[feature] || null;
+}
+
+/* ---------- 入力の生成 ---------- */
+function buildMlSelect(){
+  const info = mlLineInfo();
+  const codes = info ? Object.keys(info.codes).sort() : [];
+  const stats = info && info.codes[mlState.code] ? info.codes[mlState.code].stats : null;
+  const lineOpts = Object.keys(mlBoot.lines).map(l =>
+    `<option value="${l}" ${l===mlState.line?'selected':''}>${l}</option>`).join('');
+  const codeOpts = codes.map(c =>
+    `<option value="${esc(c)}" ${c===mlState.code?'selected':''}>${esc(c)}</option>`).join('');
+  $('ml-select').innerHTML = `
+    <div class="selrow">
+      <div class="fl"><b>ライン</b><span>GIは亜鉛めっき、GLはガルバリウム（ポット約600℃）</span></div>
+      <select onchange="onMlLineChange(this.value)">${lineOpts}</select>
+    </div>
+    <div class="selrow">
+      <div class="fl"><b>めっき付着量記号</b><span>${stats ? `実績 ${stats.n} 件・両面合計の中央値 ${stats.CH_median} g/m²` : ''}</span></div>
+      <select onchange="onMlCodeChange(this.value)">${codeOpts}</select>
+    </div>`;
+}
+
+function mlNumRow(key, value, onchange, cls){
+  const f = ML_FIELDS[key];
+  const r = mlRange(key);
+  const hint = f.hint ? `<span>${f.hint}</span>` : '';
+  const range = r ? `<div class="rangehint">実績 ${fmt(r.p10,f.dec)} 〜 ${fmt(r.p90,f.dec)}（中央 ${fmt(r.median,f.dec)}）</div>` : '';
+  const v = (value===null||value===undefined||isNaN(value)) ? '' : Number(value).toFixed(f.dec);
+  return `<div class="selrow">
+    <div class="fl"><b>${f.label}</b>${hint}${range}</div>
+    <input type="number" step="${Math.pow(10,-f.dec)}" value="${v}" class="${cls||''}"
+           oninput="${onchange}('${key}', this.value)">
+  </div>`;
+}
+
+function mlCatRow(key, value, onchange){
+  const info = mlLineInfo();
+  const options = (info && info.categories[key]) || [];
+  const opts = options.map(([v,n]) =>
+    `<option value="${esc(v)}" ${v===String(value)?'selected':''}>${esc(v)}（${n}）</option>`).join('');
+  return `<div class="selrow">
+    <div class="fl"><b>${ML_CATS[key]}</b></div>
+    <select onchange="${onchange}('${key}', this.value)">${opts}</select>
+  </div>`;
+}
+
+function buildMlFields(){
+  const groups = {main:[], prod:[], other:[]};
+  Object.keys(ML_FIELDS).forEach(k => groups[ML_FIELDS[k].group].push(mlNumRow(k, mlState.cond[k], 'setMlField')));
+  const cats = Object.keys(ML_CATS).map(k => mlCatRow(k, mlState.cond[k], 'setMlField')).join('');
+  $('ml-fields').innerHTML = `
+    ${groups.main.join('')}
+    <details style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--brand);padding:6px 0">製品条件</summary>
+      <div style="padding-top:4px">${groups.prod.join('')}</div></details>
+    <details><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--brand);padding:6px 0">その他の設備条件・製品区分</summary>
+      <div style="padding-top:4px">${groups.other.join('')}${cats}</div></details>`;
+}
+
+function buildMlTarget(){
+  const info = mlLineInfo();
+  const stats = info && info.codes[mlState.code] ? info.codes[mlState.code].stats : null;
+  $('ml-target').innerHTML = `
+    <div class="selrow">
+      <div class="fl"><b>目標付着量（両面合計）</b><span>表面平均＋裏面平均。付着量記号に対応する値です</span></div>
+      <input type="number" step="0.1" value="${mlState.target!==null?mlState.target:''}"
+             oninput="mlState.target=parseFloat(this.value)||null; saveState()">
+    </div>`;
+  if (stats){
+    $('ml-target-chips').innerHTML =
+      [['実績中央値',stats.CH_median],['実績P10',stats.CH_p10],['実績P90',stats.CH_p90]]
+      .filter(([,v]) => v!==null && v!==undefined)
+      .map(([l,v]) => `<button class="chip" onclick="setMlTarget(${v})">${l} ${v}</button>`).join('');
+  } else $('ml-target-chips').innerHTML = '';
+}
+
+function setMlTarget(v){ mlState.target = v; buildMlTarget(); saveState(); }
+function setMlField(key, raw){
+  const v = parseFloat(raw);
+  mlState.cond[key] = isNaN(v) ? raw : v;
+  saveState();
+}
+
+async function onMlLineChange(line){
+  mlState.line = line;
+  const codes = Object.keys(mlBoot.lines[line].codes).sort();
+  mlState.code = codes[0];
+  await loadMlDefaults();
+}
+async function onMlCodeChange(code){
+  mlState.code = code;
+  await loadMlDefaults();
+}
+
+async function loadMlDefaults(){
+  const d = await busy('実績の標準条件を読み込み中…',
+    () => py('ml_defaults', {line: mlState.line, coating_code: mlState.code}));
+  mlState.cond = d.condition;
+  mlState.target = d.target_ch_gm2;
+  // 記号別の実績レンジを保持しておく（入力欄の目安表示に使う）
+  const info = mlLineInfo();
+  if (info && info.codes[mlState.code]) info.codes[mlState.code].featureRanges = d.features;
+  mlState.compare = Object.assign({}, d.condition);
+  buildMlSelect(); buildMlFields(); buildMlTarget();
+  saveState();
+}
+
+/* ---------- 条件設計 ---------- */
+async function runMlDesign(){
+  if (mlState.target === null || isNaN(mlState.target)){ toast('目標付着量を入力してください'); return; }
+  const payload = Object.assign({}, mlState.cond, {target_ch_gm2: mlState.target});
+  let data;
+  try { data = await busy('実績モデルで探索中…', () => py('ml_design', payload)); }
+  catch(e){ return; }
+  mlDesignResult = data.design;
+  renderMlDesign(mlDesignResult);
+  $('mldesign-out').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function mlStatusPill(status){
+  const map = {in_range:['ok','実績範囲内'], caution:['caution','要注意'], out_of_distribution:['ood','実績範囲外']};
+  const [cls,label] = map[status] || ['caution', status];
+  return `<span class="statuspill ${cls}">${label}</span>`;
+}
+
+function mlPredCard(r, target){
+  const err = mlBoot.error_reference[r.line] || {};
+  const diff = (target!==null && !isNaN(target)) ? r.CH_sum_pred_g_m2 - target : null;
+  return `<div class="card">
+    <h3>予測付着量</h3>
+    <div class="bigval">${fmt(r.CH_sum_pred_g_m2,1)}<small>g/m²（両面合計）</small></div>
+    ${diff!==null ? `<div class="sub" style="margin:4px 0 10px">目標との差 ${diff>=0?'+':''}${fmt(diff,1)} g/m²</div>` : '<div style="height:8px"></div>'}
+    <div class="sidebyside">
+      <div><div class="lab">表面平均 CF</div><div class="num">${fmt(r.CF_pred_g_m2,1)}</div></div>
+      <div><div class="lab">裏面平均 CG</div><div class="num">${fmt(r.CG_pred_g_m2,1)}</div></div>
+    </div>
+    <div class="kv" style="margin-top:10px"><span>入力の位置づけ</span><b>${mlStatusPill(r.range_status)}</b></div>
+    <div class="kv"><span>参考誤差（${r.line}・両面合計）</span><b>MAE ${fmt(err.CH_MAE,2)} / P90 ${fmt(err.CH_P90,1)} g/m²</b></div>
+    <div class="kv"><span>両面直接モデルとの差</span><b>${fmt(r.CH_direct_minus_sum_g_m2,2)} g/m²</b></div>
+    ${(r.warnings||[]).length ? `<div class="note warn" style="margin-top:10px">${r.warnings.map(esc).join('<br>')}</div>` : ''}
+  </div>`;
+}
+
+function renderMlDesign(d){
+  let html = '';
+  const cls = d.status==='ok' ? 'ok' : 'warn';
+  html += `<div class="note ${cls}"><b>${esc(d.message)}</b></div>`;
+  if (d.sample_warning) html += `<div class="note warn">${esc(d.sample_warning)}</div>`;
+  html += mlPredCard(d.current, d.target_ch_gm2);
+
+  if (d.proposals && d.proposals.length){
+    html += `<div class="card"><h3>変更の提案</h3>
+      <p class="sub">効きの大きい順に、Yノズル位置 → 通板速度 → ノズル圧力 の順で1項目ずつ試しています。</p>`;
+    d.proposals.forEach((p, i) => {
+      if (!p.found){
+        html += `<div class="leverstep miss"><div class="t">✕ ${esc(p.label)}</div>
+          <div class="d">${esc(p.reason)}</div></div>`;
+      } else {
+        const r = p.result;
+        const mark = p.approximate ? '≈' : '✓';
+        const tail = p.approximate ? `<span style="color:var(--warn)">（目標には ${p.error_gm2>=0?'+':''}${p.error_gm2} g/m² 届きません）</span>` : '';
+        html += `<div class="leverstep hit">
+          <div class="t">${mark} ${esc(p.label)}を ${p.current} → <b>${p.suggested}</b> ${esc(p.unit)}
+            （${p.delta>=0?'+':''}${p.delta} ${esc(p.unit)}）${tail}</div>
+          <div class="d">予測 ${fmt(r.CH_sum_pred_g_m2,1)} g/m²（両面合計）／表 ${fmt(r.CF_pred_g_m2,1)}・裏 ${fmt(r.CG_pred_g_m2,1)}　${mlStatusPill(r.range_status)}</div>
+          <button class="btn btn-ghost" style="margin-top:8px" onclick="applyMlProposal(${i})">この条件を反映する</button>
+        </div>`;
+      }
+    });
+    html += `<div class="note plain" style="margin-top:8px">${esc(d.fixed_note)}</div></div>`;
+  }
+  if (d.status === 'infeasible' && d.achievable){
+    html += `<div class="card"><h3>この条件で届く範囲</h3>
+      <div class="kv"><span>Yノズル位置 ${d.achievable.position_min}〜${d.achievable.position_max} mm</span>
+      <b>${d.achievable.min} 〜 ${d.achievable.max} g/m²</b></div></div>`;
+  }
+  html += `<div class="note plain">${esc(d.note)}</div>`;
+  $('mldesign-out').innerHTML = html;
+}
+
+function applyMlProposal(i){
+  const p = mlDesignResult.proposals[i];
+  if (!p || !p.found) return;
+  mlState.cond = Object.assign({}, p.condition);
+  mlState.compare = Object.assign({}, p.condition);
+  buildMlFields();
+  saveState();
+  toast(p.label + 'を反映しました');
+  runMlDesign();
+}
+
+/* ---------- 予測タブ ---------- */
+async function runMlPredict(){
+  if (!mlBoot || !mlState.cond.line) return;
+  let data, curves;
+  try {
+    data = await busy('予測を計算中…', () => py('ml_predict', mlState.cond));
+    curves = await busy('応答カーブを計算中…', () => py('ml_curves', mlState.cond));
+  } catch(e){ return; }
+  $('mlpredict-out').innerHTML = mlPredCard(data.prediction, mlState.target);
+  drawMlCurve('plot-ml-position', curves.curves.nozzle_position);
+  drawMlCurve('plot-ml-speed',    curves.curves.line_speed);
+  drawMlCurve('plot-ml-pressure', curves.curves.nozzle_pressure);
+}
+
+function drawMlCurve(divId, c){
+  if (!c || !c.x.length){ $(divId).innerHTML = ''; return; }
+  const traces = [];
+  if (c.band){
+    traces.push({x:[c.band.low,c.band.high,c.band.high,c.band.low],
+      y:[Math.min(...c.y)-2,Math.min(...c.y)-2,Math.max(...c.y)+2,Math.max(...c.y)+2],
+      fill:'toself', fillcolor:'rgba(31,78,121,.07)', line:{width:0}, hoverinfo:'skip',
+      showlegend:true, name:'実績P10〜P90', type:'scatter'});
+  }
+  traces.push({x:c.x, y:c.y, mode:'lines', name:'予測（両面合計）',
+    line:{color:'#1F4E79', width:3}, hovertemplate:'%{x}<br>%{y:.1f} g/m²<extra></extra>'});
+  if (c.current !== null && c.current !== undefined){
+    const cur = interp(c.x, c.y, c.current);
+    traces.push({x:[c.current], y:[cur], mode:'markers', name:'現在条件',
+      marker:{size:12, color:'#0EA5E9', line:{color:'#fff', width:2}},
+      hovertemplate:'現在 %{x}<br>%{y:.1f} g/m²<extra></extra>'});
+  }
+  const layout = layoutBase(`${c.label} [${c.unit}]`, '両面合計付着量 [g/m²]');
+  layout.shapes = [];
+  if (mlState.target !== null && !isNaN(mlState.target)){
+    layout.shapes.push({type:'line', xref:'paper', x0:0, x1:1, y0:mlState.target, y1:mlState.target,
+      line:{color:'#DC2626', width:2, dash:'dash'}});
+    layout.annotations = [{xref:'paper', x:0.99, y:mlState.target, xanchor:'right', yanchor:'bottom',
+      text:`目標 ${mlState.target} g/m²`, showarrow:false, font:{size:11, color:'#DC2626'}}];
+  }
+  Plotly.react(divId, traces, layout, {displayModeBar:false, responsive:true});
+}
+
+/* ---------- 条件比較タブ ---------- */
+function buildMlCompareFields(){
+  if (!mlBoot || !mlState.cond.line) return;
+  const rows = Object.keys(ML_FIELDS)
+    .filter(k => ML_FIELDS[k].group === 'main')
+    .map(k => mlNumRow(k, mlState.compare[k], 'setMlCompareField')).join('');
+  $('mlcompare-fields').innerHTML = rows;
+}
+function setMlCompareField(key, raw){
+  const v = parseFloat(raw);
+  mlState.compare[key] = isNaN(v) ? raw : v;
+}
+
+async function runMlCompare(){
+  let data;
+  try {
+    data = await busy('比較を計算中…',
+      () => py('ml_compare', {before: mlState.cond, after: mlState.compare}));
+  } catch(e){ return; }
+  const c = data.comparison;
+  const sign = v => (v>=0?'+':'') + fmt(v,1);
+  let html = `<div class="card"><h3>予測の変化</h3>
+    <div class="sidebyside">
+      <div><div class="lab">変更前（両面合計）</div><div class="num">${fmt(c.before.CH_sum_pred_g_m2,1)}</div></div>
+      <div><div class="lab">変更後（両面合計）</div><div class="num">${fmt(c.after.CH_sum_pred_g_m2,1)}</div></div>
+      <div><div class="lab">差</div><div class="num">${sign(c.delta_ch_gm2)}</div></div>
+    </div>
+    <div class="kv" style="margin-top:10px"><span>表面平均 CF</span><b>${fmt(c.before.CF_pred_g_m2,1)} → ${fmt(c.after.CF_pred_g_m2,1)}（${sign(c.delta_cf_gm2)}）</b></div>
+    <div class="kv"><span>裏面平均 CG</span><b>${fmt(c.before.CG_pred_g_m2,1)} → ${fmt(c.after.CG_pred_g_m2,1)}（${sign(c.delta_cg_gm2)}）</b></div>
+    <div class="kv"><span>変更前の位置づけ</span><b>${mlStatusPill(c.before.range_status)}</b></div>
+    <div class="kv"><span>変更後の位置づけ</span><b>${mlStatusPill(c.after.range_status)}</b></div>
+  </div>`;
+  if (c.diffs.length){
+    html += `<div class="card"><h3>変えた項目</h3><div class="tablewrap"><table><thead><tr>
+      <th>項目</th><th>変更前</th><th>変更後</th><th>差</th></tr></thead><tbody>` +
+      c.diffs.map(d => `<tr><td>${esc((ML_FIELDS[d.field]||{}).label || d.field)}</td>
+        <td>${d.before}</td><td>${d.after}</td><td>${d.delta===null?'-':(d.delta>=0?'+':'')+d.delta}</td></tr>`).join('') +
+      `</tbody></table></div></div>`;
+  } else {
+    html += `<div class="note plain">変更された項目がありません。</div>`;
+  }
+  if ((c.after.warnings||[]).length){
+    html += `<div class="note warn">${c.after.warnings.map(esc).join('<br>')}</div>`;
+  }
+  html += `<div class="note plain">${esc(c.note)}</div>`;
+  $('mlcompare-out').innerHTML = html;
 }
 
 /* ==================================================================
@@ -1410,6 +1929,10 @@ function setProgress(pct, msg){
 function syncHeaderHeight(){
   const h = $('app-header').offsetHeight;
   if (h) document.documentElement.style.setProperty('--hdr-h', h + 'px');
+  // デスクトップではヘッダー→モード切替→タブの順に積み上がるので、
+  // タブの吸着位置はモード切替バーの高さぶん下げる。
+  const m = $('app-mode').offsetHeight;
+  document.documentElement.style.setProperty('--mode-h', (m || 0) + 'px');
 }
 async function installPythonModules(){
   const files = [
@@ -1434,6 +1957,12 @@ async function installPythonModules(){
     'python/gaswipelab/utils/__init__.py',
     'python/gaswipelab/utils/paths.py',
     'python/gaswipelab/utils/validation.py',
+    'python/gaswipelab/ml/__init__.py',
+    'python/gaswipelab/ml/cityhash.py',
+    'python/gaswipelab/ml/catboost_runtime.py',
+    'python/gaswipelab/ml/ood.py',
+    'python/gaswipelab/ml/predictor.py',
+    'python/gaswipelab/services/machine_design_service.py',
   ];
   for (const f of files){
     const text = await (await fetch(f)).text();
@@ -1442,14 +1971,25 @@ async function installPythonModules(){
     pyodide.FS.writeFile(pyPath, text);
   }
 }
+
+async function installModelFiles(){
+  const files = ['manifest.json', 'reference.json',
+    'GI_CF.json', 'GI_CG.json', 'GI_CH.json', 'GL_CF.json', 'GL_CG.json', 'GL_CH.json'];
+  pyodide.FS.mkdirTree('/models');
+  // 実機モデルは合計約1.8MB。並列に取得してから書き込む。
+  const texts = await Promise.all(files.map(f => fetch('models/' + f).then(r => r.text())));
+  files.forEach((f, i) => pyodide.FS.writeFile('/models/' + f, texts[i]));
+}
 async function init(){
   loadState();
   setProgress(6, 'Python実行環境を読み込み中…');
   pyodide = await loadPyodide({indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'});
   setProgress(28, '数値計算ライブラリを準備中…');
   await pyodide.loadPackage(['numpy', 'scipy', 'pandas', 'pydantic']);
-  setProgress(62, '流体モデルを読み込み中…');
+  setProgress(55, '流体モデルを読み込み中…');
   await installPythonModules();
+  setProgress(68, '実機データモデルを読み込み中…');
+  await installModelFiles();
   setProgress(82, 'モデルを初期化中…');
   await pyodide.runPythonAsync(`
 import sys
@@ -1457,12 +1997,14 @@ sys.path.insert(0, '/python')
 import gaswipelab.web_api as _api
 `);
   const boot = await py('bootstrap');
+  setProgress(90, '実績データを集計中…');
+  mlBoot = await py('ml_bootstrap');
   setProgress(94, '画面を組み立て中…');
   buildInputs();
   renderCalStatus(boot.calibration);
   $('loading').style.display = 'none';
   $('app-header').style.display = 'flex';
-  $('app-nav').style.display = 'flex';
+  $('app-mode').style.display = 'flex';
   $('main').style.display = 'block';
   setProgress(100, '完了');
 
@@ -1477,7 +2019,15 @@ import gaswipelab.web_api as _api
   dz.addEventListener('dragleave', () => dz.classList.remove('over'));
   dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); loadCSV(e.dataTransfer.files[0]); });
 
-  await runDesign();
+  // 実機モードを既定にする。保存済みの記号があればそれを復元する。
+  if (!mlBoot.lines[mlState.line]) mlState.line = Object.keys(mlBoot.lines)[0];
+  if (!mlBoot.lines[mlState.line].codes[mlState.code]){
+    mlState.code = Object.keys(mlBoot.lines[mlState.line].codes).sort()[0];
+  }
+  await loadMlDefaults();
+  switchMode(mlState.mode === 'phys' ? 'phys' : 'ml');
+  if (mlState.mode === 'phys') await runDesign();
+  else await runMlDesign();
 }
 
 if ('serviceWorker' in navigator){
