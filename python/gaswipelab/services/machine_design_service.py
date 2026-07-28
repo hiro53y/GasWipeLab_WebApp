@@ -251,6 +251,7 @@ class MachineDesignService:
             "coating_code": code,
             "target_ch_gm2": target_ch_gm2,
             "current": current,
+            "current_condition": base,
             "current_ch_gm2": round(current_ch, 1),
             "fixed_note": FIXED_NOTE,
             "note": INTERPOLATION_NOTE,

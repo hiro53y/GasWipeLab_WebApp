@@ -114,6 +114,42 @@ nav.bottom{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + env
 .leverstep .d{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.6}
 .plotbox{width:100%;height:260px}
 
+/* ---------- スライダー入力（スマホで指だけ操作できるようにする） ---------- */
+.srow{padding:11px 0;border-bottom:1px dashed #EEF2F6}
+.srow:last-child{border-bottom:none}
+.srow .top{display:flex;align-items:baseline;gap:8px}
+.srow .top b{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:#1E293B}
+.srow .top .val{font-size:21px;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums}
+.srow .top .unit{font-size:11.5px;font-weight:600;color:var(--muted)}
+.srow .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:1px}
+.srow .ends{display:flex;justify-content:space-between;font-size:10.5px;color:#94A3B8;margin-top:-4px}
+.srow.out .top .val{color:var(--warn)}
+input[type=range]{width:100%;margin:8px 0 2px;height:30px;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+input[type=range]:focus{outline:none}
+input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:4px;
+  background:linear-gradient(90deg,var(--brand) var(--pct,50%),#E2E8F0 var(--pct,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:-10.5px;
+  border-radius:50%;background:#fff;border:3px solid var(--brand);box-shadow:0 2px 6px rgba(15,23,42,.22)}
+input[type=range]::-moz-range-track{height:7px;border-radius:4px;background:#E2E8F0}
+input[type=range]::-moz-range-progress{height:7px;border-radius:4px;background:var(--brand)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;
+  border:3px solid var(--brand);box-shadow:0 2px 6px rgba(15,23,42,.22)}
+
+/* ---------- 答え（推奨条件）の見せ方 ---------- */
+.answer{background:linear-gradient(135deg,#1F4E79,#2E6FA7);color:#fff;border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.answer h3{margin:0 0 2px;font-size:13px;font-weight:700;color:rgba(255,255,255,.82)}
+.answer .lead{font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.9);margin-bottom:12px}
+.ansgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(min-width:700px){.ansgrid{grid-template-columns:repeat(4,1fr)}}
+.anscell{background:rgba(255,255,255,.12);border-radius:11px;padding:10px 11px}
+.anscell.key{background:#fff;color:var(--brand)}
+.anscell .l{font-size:10.5px;font-weight:600;opacity:.85}
+.anscell .v{font-size:21px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.anscell .u{font-size:10.5px;font-weight:600;opacity:.8;margin-left:3px}
+.anscell .chg{font-size:10.5px;font-weight:700;margin-top:3px;color:#BBF7D0}
+.anscell.key .chg{color:#B45309}
+
 /* ---------- cards ---------- */
 .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(226,232,240,.8)}
 .card h2{font-size:16px;margin:0 0 3px;color:var(--brand);font-weight:700;display:flex;align-items:center;gap:8px}
@@ -318,47 +354,60 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 ================================================================= -->
 <div id="tab-mldesign" class="tab-content active">
 
+  <div class="note info" style="margin-top:0">
+    <b>目標の付着量を出すには、どの条件にすればよいか</b>を求めるアプリです。<br>
+    ① 何を作るか ② 目標の付着量 ③ 先に決まっている条件 を指定すると、
+    <b>必要なYノズル位置・圧力・流量</b>が出ます。
+    根拠は実機プロコンの6か月・14,390件の実績です。
+  </div>
+
   <details id="mlhowto">
-    <summary>はじめに：このモードでできること</summary>
+    <summary>ほかのタブは何に使うか</summary>
     <div class="body">
-      <div class="note plain" style="margin-top:0">
-        実機プロコンの <b>6か月・14,390件</b> の実績から学習したモデルで、
-        <b>いまのラインで実際に出る付着量</b> を予測し、目標に合わせる操作量を出します。
-      </div>
-      <div class="kv"><span><b>条件設計</b>（このタブ）</span><b style="text-align:right">ライン・付着量記号・製品条件を入れると、<br>目標付着量に合わせる操作量を提案する</b></div>
-      <div class="kv"><span><b>予測</b></span><b style="text-align:right">条件を入れて表面／裏面／両面合計の付着量を予測する。<br>実績範囲の内か外かも判定する</b></div>
-      <div class="kv"><span><b>条件比較</b></span><b style="text-align:right">いまの条件と変更後の条件を並べ、<br>どの変数がどれだけ効いたかを見る</b></div>
-      <div class="kv"><span><b>理論モード</b></span><b style="text-align:right">実績のない条件を物理式で検討する。<br>ガス種・ノズルすき間など実績データに無い項目を扱える</b></div>
+      <div class="kv"><span><b>予測</b></span><b style="text-align:right">条件を決めたあと、表面／裏面／両面合計が<br>いくつになるかを確かめる</b></div>
+      <div class="kv"><span><b>条件比較</b></span><b style="text-align:right">いまの条件と変更後を並べ、<br>どの項目がどれだけ効いたかを見る</b></div>
+      <div class="kv"><span><b>理論モード</b></span><b style="text-align:right">実績にない条件を物理式で検討する。<br>ガス種・ノズルすき間など実績データに無い項目を扱える</b></div>
     </div>
   </details>
 
   <div class="card">
-    <h2><span class="step-tag">1</span>製品とラインを選ぶ</h2>
-    <p class="sub">付着量記号を選ぶと、その記号の <b>実績中央値</b> が各項目の初期値として入ります。</p>
+    <h2><span class="step-tag">1</span>何を作るか</h2>
+    <p class="sub">付着量記号を選ぶと、その記号の <b>実績中央値</b> がすべての初期値に入ります。</p>
     <div id="ml-select"></div>
+    <div id="ml-product"></div>
   </div>
 
   <div class="card">
-    <h2><span class="step-tag">2</span>操業条件</h2>
-    <p class="sub">
-      実績の操業範囲を右側に表示しています。<b>Yノズル位置は設備座標</b>で、
-      数値が大きいほど鋼帯から遠い側です（鋼帯表面からの絶対距離ではありません）。
-    </p>
-    <div id="ml-fields"></div>
-  </div>
-
-  <div class="card">
-    <h2><span class="step-tag">3</span>目標付着量</h2>
-    <p class="sub">付着量記号に対応する <b>両面合計</b> で入力します（片面平均ではありません）。</p>
+    <h2><span class="step-tag">2</span>目標の付着量</h2>
+    <p class="sub"><b>両面合計</b>（表面平均＋裏面平均）で指定します。片面平均ではありません。</p>
     <div id="ml-target"></div>
     <div class="chips" id="ml-target-chips"></div>
   </div>
 
+  <div class="card">
+    <h2><span class="step-tag">3</span>動かせない条件</h2>
+    <p class="sub">生産計画などで先に決まっている条件があれば、ここで合わせてください。</p>
+    <div id="ml-fixed"></div>
+  </div>
+
   <button class="btn btn-primary" onclick="runMlDesign()" id="mldesign-btn">
-    この目標に合わせる操作量を計算する
+    この目標を出す操業条件を求める
   </button>
 
   <div id="mldesign-out" style="margin-top:12px"></div>
+
+  <details style="margin-top:4px">
+    <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--brand);padding:8px 0">
+      いまの条件をすべて確認・変更する
+    </summary>
+    <div class="card" style="margin-top:8px">
+      <p class="sub">
+        <b>Yノズル位置は設備Y座標</b>で、数値が大きいほど鋼帯から遠い側です
+        （鋼帯表面からの絶対距離ではありません）。
+      </p>
+      <div id="ml-fields"></div>
+    </div>
+  </details>
 
   <div class="disclaimer">
     実機モデルは過去実績の統計的補間です。設備条件を独立に動かしたときの因果効果を保証するものではありません。
@@ -859,7 +908,7 @@ function switchTab(name){
   if (ML_TABS.includes(name)) mlState.tab = name;
   saveState();
   if (name==='check' && checkDirty) runCheck(false);
-  if (name==='mlpredict') runMlPredict();
+  if (name==='mlpredict'){ resizeMlPlots(); runMlPredict(); }
   if (name==='mlcompare') buildMlCompareFields();
 }
 
@@ -878,25 +927,29 @@ const mlState = {
 
 /* 表示する数値項目。group: main=操作量 / prod=製品条件 / other=詳細 */
 const ML_FIELDS = {
-  '表ノズル位置平均_mm':      {label:'Yノズル位置（表）', hint:'設備Y座標。大きいほど鋼帯から遠い', dec:2, group:'main'},
-  '裏ノズル位置平均_mm':      {label:'Yノズル位置（裏）', hint:'設備Y座標。大きいほど鋼帯から遠い', dec:2, group:'main'},
-  '表ノズル圧力_kPa':        {label:'ノズル圧力（表）', hint:'', dec:2, group:'main'},
-  '裏ノズル圧力_kPa':        {label:'ノズル圧力（裏）', hint:'', dec:2, group:'main'},
-  '中央速度_m_min':          {label:'通板速度', hint:'ラインスピード', dec:1, group:'main'},
-  'ノズル吹込流量_Nm3H':      {label:'ノズル吹込流量', hint:'表裏合計の実測流量（Nm³/h・暫定定義）。圧力と連動する', dec:0, group:'main'},
-  '製品板厚_mm':             {label:'製品板厚', hint:'', dec:2, group:'prod'},
-  '製品板幅_mm':             {label:'製品板幅', hint:'', dec:0, group:'prod'},
-  '2JC進入板温_IR_C':        {label:'2JC進入板温', hint:'めっき浴に入る直前の板温（赤外線）', dec:0, group:'prod'},
-  '使用ポット温度_C':         {label:'ポット温度', hint:'ラインで決まる', dec:0, group:'prod'},
-  'ポット張力_kN':           {label:'ポット張力', hint:'', dec:2, group:'other'},
-  'ノズル高さ平均_mm':        {label:'ノズル高さ', hint:'浴面からノズルスリットまでの高さ', dec:1, group:'other'},
-  'ノズル空気温度_C':         {label:'ノズル空気温度', hint:'', dec:0, group:'other'},
-  'コレクティングロール平均_mm':{label:'コレクティングロール位置', hint:'', dec:2, group:'other'},
-  'コレクティングロールWS-DS_mm':{label:'コレクティングロール WS-DS差', hint:'', dec:2, group:'other'},
-  '表ノズル位置WS-DS_mm':     {label:'Yノズル位置 表のWS-DS差', hint:'', dec:2, group:'other'},
-  '裏ノズル位置WS-DS_mm':     {label:'Yノズル位置 裏のWS-DS差', hint:'', dec:2, group:'other'},
-  'ノズル高さWS-DS_mm':       {label:'ノズル高さ WS-DS差', hint:'', dec:2, group:'other'},
+  '表ノズル位置平均_mm':      {label:'Yノズル位置（表）', unit:'mm', hint:'設備Y座標。大きいほど鋼帯から遠い', dec:2, group:'main'},
+  '裏ノズル位置平均_mm':      {label:'Yノズル位置（裏）', unit:'mm', hint:'設備Y座標。大きいほど鋼帯から遠い', dec:2, group:'main'},
+  '表ノズル圧力_kPa':        {label:'ノズル圧力（表）', unit:'kPa', hint:'', dec:2, group:'main'},
+  '裏ノズル圧力_kPa':        {label:'ノズル圧力（裏）', unit:'kPa', hint:'', dec:2, group:'main'},
+  '中央速度_m_min':          {label:'通板速度', unit:'m/min', hint:'ラインスピード', dec:1, group:'main'},
+  'ノズル吹込流量_Nm3H':      {label:'ノズル吹込流量', unit:'Nm³/h', hint:'表裏合計の実測流量（暫定定義）。圧力と連動する', dec:0, group:'main'},
+  '製品板厚_mm':             {label:'製品板厚', unit:'mm', hint:'', dec:2, group:'prod'},
+  '製品板幅_mm':             {label:'製品板幅', unit:'mm', hint:'', dec:0, group:'prod'},
+  '2JC進入板温_IR_C':        {label:'2JC進入板温', unit:'℃', hint:'めっき浴に入る直前の板温（赤外線）', dec:0, group:'prod'},
+  '使用ポット温度_C':         {label:'ポット温度', unit:'℃', hint:'ラインで決まる', dec:0, group:'prod'},
+  'ポット張力_kN':           {label:'ポット張力', unit:'kN', hint:'', dec:2, group:'other'},
+  'ノズル高さ平均_mm':        {label:'ノズル高さ', unit:'mm', hint:'浴面からノズルスリットまでの高さ', dec:1, group:'other'},
+  'ノズル空気温度_C':         {label:'ノズル空気温度', unit:'℃', hint:'', dec:0, group:'other'},
+  'コレクティングロール平均_mm':{label:'コレクティングロール位置', unit:'mm', hint:'', dec:2, group:'other'},
+  'コレクティングロールWS-DS_mm':{label:'コレクティングロール WS-DS差', unit:'mm', hint:'', dec:2, group:'other'},
+  '表ノズル位置WS-DS_mm':     {label:'Yノズル位置 表のWS-DS差', unit:'mm', hint:'', dec:2, group:'other'},
+  '裏ノズル位置WS-DS_mm':     {label:'Yノズル位置 裏のWS-DS差', unit:'mm', hint:'', dec:2, group:'other'},
+  'ノズル高さWS-DS_mm':       {label:'ノズル高さ WS-DS差', unit:'mm', hint:'', dec:2, group:'other'},
 };
+/* 答えとして提示する条件（この順に並べる） */
+const ML_ANSWER_KEYS = ['表ノズル位置平均_mm','裏ノズル位置平均_mm','表ノズル圧力_kPa','ノズル吹込流量_Nm3H','中央速度_m_min'];
+/* 手順3「動かせない条件」に出す項目 */
+const ML_FIXED_KEYS = ['中央速度_m_min','製品板厚_mm','製品板幅_mm'];
 const ML_CATS = {
   'V:スパングル':'スパングル', 'W:化成処理':'化成処理', 'X:カーボン量':'カーボン量',
   'Y:類別':'類別', 'Z:材質':'材質', 'AB:規格':'規格', 'AC:用途':'用途',
@@ -932,17 +985,73 @@ function buildMlSelect(){
     </div>`;
 }
 
-function mlNumRow(key, value, onchange, cls){
+/* スライダー1本。数値のキーボード入力なしで操作できるようにする。 */
+function sliderRow(opt){
+  const {id, label, unit, hint, min, max, step, dec, value, oninput, onchange, dataKey} = opt;
+  const v = (value===null || value===undefined || isNaN(value)) ? (min+max)/2 : Number(value);
+  const clamped = Math.min(max, Math.max(min, v));
+  const pct = max > min ? ((clamped - min) / (max - min) * 100) : 50;
+  const outside = Math.abs(clamped - v) > 1e-9;
+  return `<div class="srow ${outside?'out':''}" id="srow-${id}">
+    <div class="top">
+      <b>${label}</b>
+      <span class="val" id="sval-${id}">${v.toFixed(dec)}</span><span class="unit">${unit}</span>
+    </div>
+    ${hint ? `<div class="hint">${hint}</div>` : ''}
+    <input type="range" id="sinp-${id}" min="${min}" max="${max}" step="${step}" value="${clamped}"
+           ${dataKey ? `data-key="${dataKey}" data-dec="${dec}"` : ''}
+           style="--pct:${pct}%" oninput="${oninput}" ${onchange ? `onchange="${onchange}"` : ''}>
+    <div class="ends"><span>${min.toFixed(dec)}</span><span>${max.toFixed(dec)}</span></div>
+  </div>`;
+}
+
+/* スライダー操作時に、つまみの塗りと数値表示を更新する。 */
+function sliderPaint(id, el, dec){
+  const min = parseFloat(el.min), max = parseFloat(el.max), v = parseFloat(el.value);
+  el.style.setProperty('--pct', (max > min ? (v-min)/(max-min)*100 : 50) + '%');
+  const out = $('sval-'+id);
+  if (out) out.textContent = v.toFixed(dec);
+  const row = $('srow-'+id);
+  if (row) row.classList.remove('out');
+  return v;
+}
+
+/* 実績レンジからスライダーの下限・上限を決める（狭すぎるときは少し広げる）。 */
+function mlSliderBounds(key){
   const f = ML_FIELDS[key];
   const r = mlRange(key);
-  const hint = f.hint ? `<span>${f.hint}</span>` : '';
-  const range = r ? `<div class="rangehint">実績 ${fmt(r.p10,f.dec)} 〜 ${fmt(r.p90,f.dec)}（中央 ${fmt(r.median,f.dec)}）</div>` : '';
-  const v = (value===null||value===undefined||isNaN(value)) ? '' : Number(value).toFixed(f.dec);
-  return `<div class="selrow">
-    <div class="fl"><b>${f.label}</b>${hint}${range}</div>
-    <input type="number" step="${Math.pow(10,-f.dec)}" value="${v}" class="${cls||''}"
-           oninput="${onchange}('${key}', this.value)">
-  </div>`;
+  if (!r) return null;
+  let min = r.min, max = r.max;
+  if (!(max > min)){ min = r.median - 1; max = r.median + 1; }
+  const stepRaw = (max - min) / 100;
+  const step = Math.max(Math.pow(10, -f.dec), Math.pow(10, Math.round(Math.log10(stepRaw))));
+  return {min: Math.floor(min/step)*step, max: Math.ceil(max/step)*step, step};
+}
+
+function mlNumRow(key, value, onchange, onrelease){
+  const f = ML_FIELDS[key];
+  const b = mlSliderBounds(key);
+  const r = mlRange(key);
+  if (!b) return '';
+  const hint = [f.hint, r ? `実績の中央値 ${fmt(r.median,f.dec)}（よく使う範囲 ${fmt(r.p10,f.dec)}〜${fmt(r.p90,f.dec)}）` : '']
+    .filter(Boolean).join('　/　');
+  const sid = key.replace(/[^A-Za-z0-9]/g,'_') + (onchange==='setMlCompareField' ? '_c' : '');
+  return sliderRow({
+    id: sid, label: f.label, unit: f.unit, hint, dec: f.dec,
+    min: b.min, max: b.max, step: b.step, value,
+    dataKey: onchange==='setMlField' ? key : null,
+    oninput: `${onchange}('${key}', sliderPaint('${sid}', this, ${f.dec}))`,
+    onchange: onrelease || null,
+  });
+}
+
+/* 同じ項目のスライダーが複数の場所にあるとき（例: 通板速度）、まとめて追従させる。 */
+function syncMlSliders(key, value, exceptEl){
+  document.querySelectorAll(`input[type=range][data-key="${CSS.escape(key)}"]`).forEach(el => {
+    if (el === exceptEl) return;
+    el.value = value;
+    sliderPaint(el.id.replace(/^sinp-/, ''), el, parseInt(el.dataset.dec, 10) || 0);
+  });
 }
 
 function mlCatRow(key, value, onchange){
@@ -966,20 +1075,40 @@ function buildMlFields(){
       <div style="padding-top:4px">${groups.prod.join('')}</div></details>
     <details><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--brand);padding:6px 0">その他の設備条件・製品区分</summary>
       <div style="padding-top:4px">${groups.other.join('')}${cats}</div></details>`;
+  buildMlFixed();
+}
+
+/* 手順1の製品サイズ（板厚・板幅）*/
+function buildMlProduct(){
+  $('ml-product').innerHTML = ['製品板厚_mm','製品板幅_mm']
+    .map(k => mlNumRow(k, mlState.cond[k], 'setMlField', 'runMlDesign()')).join('');
+}
+
+/* 手順3の「先に決まっている条件」。指を離した時点で答えを出しなおす。 */
+function buildMlFixed(){
+  const el = $('ml-fixed');
+  if (!el) return;
+  el.innerHTML = ML_FIXED_KEYS.map(k => mlNumRow(k, mlState.cond[k], 'setMlField', 'runMlDesign()')).join('');
 }
 
 function buildMlTarget(){
   const info = mlLineInfo();
   const stats = info && info.codes[mlState.code] ? info.codes[mlState.code].stats : null;
-  $('ml-target').innerHTML = `
-    <div class="selrow">
-      <div class="fl"><b>目標付着量（両面合計）</b><span>表面平均＋裏面平均。付着量記号に対応する値です</span></div>
-      <input type="number" step="0.1" value="${mlState.target!==null?mlState.target:''}"
-             oninput="mlState.target=parseFloat(this.value)||null; saveState()">
-    </div>`;
+  const median = stats && stats.CH_median ? stats.CH_median : 100;
+  // Yノズル位置を遠ざけると付着量は増えるため、上側に広めにとる。
+  const min = Math.floor(median * 0.85);
+  const max = Math.ceil(median * 1.30);
+  if (mlState.target === null || isNaN(mlState.target)) mlState.target = median;
+  $('ml-target').innerHTML = sliderRow({
+    id: 'target', label: '目標付着量（両面合計）', unit: 'g/m²',
+    hint: stats ? `${esc(mlState.code)} の実績中央値 ${stats.CH_median} g/m²（実績のばらつき ${stats.CH_p10}〜${stats.CH_p90}）` : '',
+    min, max, step: 0.5, dec: 1, value: mlState.target,
+    oninput: `mlState.target = sliderPaint('target', this, 1); saveState()`,
+    onchange: `runMlDesign()`,
+  });
   if (stats){
     $('ml-target-chips').innerHTML =
-      [['実績中央値',stats.CH_median],['実績P10',stats.CH_p10],['実績P90',stats.CH_p90]]
+      [['実績中央値',stats.CH_median],['実績の下側P10',stats.CH_p10],['実績の上側P90',stats.CH_p90]]
       .filter(([,v]) => v!==null && v!==undefined)
       .map(([l,v]) => `<button class="chip" onclick="setMlTarget(${v})">${l} ${v}</button>`).join('');
   } else $('ml-target-chips').innerHTML = '';
@@ -989,6 +1118,7 @@ function setMlTarget(v){ mlState.target = v; buildMlTarget(); saveState(); }
 function setMlField(key, raw){
   const v = parseFloat(raw);
   mlState.cond[key] = isNaN(v) ? raw : v;
+  if (!isNaN(v)) syncMlSliders(key, v, document.activeElement);
   saveState();
 }
 
@@ -1012,7 +1142,7 @@ async function loadMlDefaults(){
   const info = mlLineInfo();
   if (info && info.codes[mlState.code]) info.codes[mlState.code].featureRanges = d.features;
   mlState.compare = Object.assign({}, d.condition);
-  buildMlSelect(); buildMlFields(); buildMlTarget();
+  buildMlSelect(); buildMlProduct(); buildMlFields(); buildMlTarget();
   saveState();
 }
 
@@ -1034,11 +1164,11 @@ function mlStatusPill(status){
   return `<span class="statuspill ${cls}">${label}</span>`;
 }
 
-function mlPredCard(r, target){
+function mlPredCard(r, target, title){
   const err = mlBoot.error_reference[r.line] || {};
   const diff = (target!==null && !isNaN(target)) ? r.CH_sum_pred_g_m2 - target : null;
   return `<div class="card">
-    <h3>予測付着量</h3>
+    <h3>${title || '予測付着量'}</h3>
     <div class="bigval">${fmt(r.CH_sum_pred_g_m2,1)}<small>g/m²（両面合計）</small></div>
     ${diff!==null ? `<div class="sub" style="margin:4px 0 10px">目標との差 ${diff>=0?'+':''}${fmt(diff,1)} g/m²</div>` : '<div style="height:8px"></div>'}
     <div class="sidebyside">
@@ -1052,12 +1182,52 @@ function mlPredCard(r, target){
   </div>`;
 }
 
+/* 「この条件でやってください」を最初に大きく出す。これがこのアプリの答え。 */
+function mlAnswerCard(d){
+  const hit = (d.proposals || []).find(p => p.found);
+  const cond = hit ? hit.condition : d.current_condition;
+  const result = hit ? hit.result : d.current;
+  if (!cond) return '';
+  const changedKey = hit ? {nozzle_position:'表ノズル位置平均_mm', line_speed:'中央速度_m_min',
+                            nozzle_pressure:'表ノズル圧力_kPa'}[hit.lever] : null;
+  const cells = ML_ANSWER_KEYS.map(k => {
+    const f = ML_FIELDS[k];
+    const v = cond[k];
+    if (v === null || v === undefined) return '';
+    const isKey = hit && (k === changedKey ||
+      (hit.lever==='nozzle_position' && k==='裏ノズル位置平均_mm') );
+    let chg = '';
+    if (hit && isKey){
+      const before = d.current_condition ? d.current_condition[k] : null;
+      if (before !== null && before !== undefined && Math.abs(before - v) > 1e-9){
+        chg = `<div class="chg">${before>v?'▼':'▲'} ${fmt(Math.abs(v-before), f.dec)} 変更</div>`;
+      }
+    } else if (hit && k==='ノズル吹込流量_Nm3H' && hit.lever==='nozzle_pressure'){
+      chg = `<div class="chg">圧力に追従</div>`;
+    }
+    return `<div class="anscell ${isKey?'key':''}">
+      <div class="l">${f.label}</div>
+      <div class="v">${fmt(v, f.dec)}<span class="u">${f.unit}</span></div>${chg}</div>`;
+  }).join('');
+  const lead = d.status === 'ok'
+    ? `目標 ${fmt(d.target_ch_gm2,1)} g/m² に対する予測は <b>${fmt(result.CH_sum_pred_g_m2,1)} g/m²</b>（両面合計）です。`
+    : d.status === 'approximate'
+      ? `目標ちょうどには届きません。もっとも近づく条件です（予測 <b>${fmt(result.CH_sum_pred_g_m2,1)} g/m²</b>）。`
+      : `目標に届く条件が実績範囲内に見つかりませんでした。下の「届く範囲」を確認してください。`;
+  return `<div class="answer">
+    <h3>この目標を出す操業条件</h3>
+    <div class="lead">${lead}</div>
+    <div class="ansgrid">${cells}</div>
+  </div>`;
+}
+
 function renderMlDesign(d){
   let html = '';
+  if (d.status !== 'infeasible') html += mlAnswerCard(d);
   const cls = d.status==='ok' ? 'ok' : 'warn';
   html += `<div class="note ${cls}"><b>${esc(d.message)}</b></div>`;
   if (d.sample_warning) html += `<div class="note warn">${esc(d.sample_warning)}</div>`;
-  html += mlPredCard(d.current, d.target_ch_gm2);
+  html += mlPredCard(d.current, d.target_ch_gm2, 'いまの条件のままだと');
 
   if (d.proposals && d.proposals.length){
     html += `<div class="card"><h3>変更の提案</h3>
@@ -1139,7 +1309,17 @@ function drawMlCurve(divId, c){
     layout.annotations = [{xref:'paper', x:0.99, y:mlState.target, xanchor:'right', yanchor:'bottom',
       text:`目標 ${mlState.target} g/m²`, showarrow:false, font:{size:11, color:'#DC2626'}}];
   }
-  Plotly.react(divId, traces, layout, {displayModeBar:false, responsive:true});
+  // react だけでは前回描画時の幅を引きずるため、明示的にリサイズする。
+  Plotly.react(divId, traces, layout, {displayModeBar:false, responsive:true})
+        .then(() => Plotly.Plots.resize($(divId)));
+}
+
+const ML_PLOT_IDS = ['plot-ml-position','plot-ml-speed','plot-ml-pressure'];
+function resizeMlPlots(){
+  ML_PLOT_IDS.forEach(id => {
+    const el = $(id);
+    if (el && el.querySelector('.main-svg')) { try { Plotly.Plots.resize(el); } catch(e){} }
+  });
 }
 
 /* ---------- 条件比較タブ ---------- */
@@ -2012,7 +2192,10 @@ import gaswipelab.web_api as _api
   window.addEventListener('resize', () => {
     syncHeaderHeight();
     clearTimeout(window._rz);
-    window._rz = setTimeout(() => { if ($('tab-check').classList.contains('active')) drawDiagram(state.check); }, 200);
+    window._rz = setTimeout(() => {
+      if ($('tab-check').classList.contains('active')) drawDiagram(state.check);
+      if ($('tab-mlpredict').classList.contains('active')) resizeMlPlots();
+    }, 200);
   });
   const dz = $('drop');
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
