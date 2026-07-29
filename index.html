@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GasWipeLab">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>GasWipeLab v4.0 — ワイピング条件設計</title>
+<title>GasWipeLab v4.1 — ワイピング条件設計</title>
 <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <style>
@@ -134,6 +134,57 @@ input[type=range]::-moz-range-track{height:7px;border-radius:4px;background:#E2E
 input[type=range]::-moz-range-progress{height:7px;border-radius:4px;background:var(--brand)}
 input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;
   border:3px solid var(--brand);box-shadow:0 2px 6px rgba(15,23,42,.22)}
+
+/* ---------- 装置画面（実機HMI風。このパネル内だけに閉じたスタイル） ---------- */
+.hmi{background:#0B0B0F;border-radius:var(--radius);padding:12px;margin-bottom:12px;
+  box-shadow:var(--shadow);color:#E8E8F0;overflow-x:auto}
+.hmi *{box-sizing:border-box}
+.hmi .bar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  background:#E9D5F0;color:#2A1B33;border-radius:5px;padding:5px 10px;margin-bottom:11px}
+.hmi .bar .t{font-weight:800;font-size:14.5px;letter-spacing:.06em}
+.hmi .bar .meta{margin-left:auto;font-size:10.5px;color:#5B4668;font-weight:600}
+.hmi .grp{border:1px solid #2E2E3C;border-radius:7px;padding:9px 10px 10px;margin-bottom:9px}
+.hmi .grp>.gt{font-size:10.5px;font-weight:700;color:#A8A8C0;letter-spacing:.05em;margin-bottom:7px}
+.hmi .row{display:grid;gap:7px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:640px){.hmi .row.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hmi .row.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .hmi .row.c5{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.hmi .cell{min-width:0}
+.hmi .cl{font-size:10.5px;color:#9C9CB4;line-height:1.35;margin-bottom:3px;
+  display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
+.hmi .cv{border:1px solid #4A4A60;border-radius:4px;background:#101018;padding:5px 8px;
+  font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmi .cv .u{font-size:10.5px;font-weight:600;color:#8A8AA6;margin-left:3px}
+.hmi .cv.proc{color:#5BE8A8}      /* ProC実データ由来 */
+.hmi .cv.model{color:#FF8AD8}     /* モデル予測 */
+.hmi .cv.derived{color:#7FD4FF}   /* ProCからの導出 */
+.hmi .cv.none{color:#6B6B80;font-size:12.5px;font-weight:600;text-align:center;
+  border-style:dashed;background:#0D0D14}
+.hmi .cv.big{font-size:21px}
+.hmi .tag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.04em;
+  border-radius:3px;padding:1px 4px;border:1px solid currentColor;line-height:1.5}
+.hmi .tag.proc{color:#5BE8A8}
+.hmi .tag.model{color:#FF8AD8}
+.hmi .tag.derived{color:#7FD4FF}
+.hmi .tag.none{color:#8A8AA6}
+.hmi .tag.unv{color:#FFC46B}
+.hmi .modes{display:grid;gap:6px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:700px){.hmi .modes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.hmi .mode{border:1px solid #3A3A4C;border-radius:5px;padding:6px 8px;background:#101018}
+.hmi .mode .ml{font-size:10.5px;color:#9C9CB4}
+.hmi .mode .ms{font-size:12.5px;font-weight:800;color:#FFC46B;margin-top:2px}
+.hmi .foot{font-size:10.5px;color:#8A8AA6;line-height:1.7;margin-top:9px}
+.hmi .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:#9C9CB4;margin-bottom:9px}
+
+/* 診断値の一覧 */
+.diagrow{display:flex;align-items:baseline;gap:9px;padding:8px 0;border-bottom:1px dashed #EEF2F6}
+.diagrow:last-child{border-bottom:none}
+.diagrow .dl{flex:1;min-width:0;font-size:13px;color:var(--ink)}
+.diagrow .dv{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--brand)}
+.diagrow .dv.na{font-size:12px;font-weight:600;color:var(--muted)}
+.diagrow.warn .dv{color:var(--warn)}
+.diagnote{font-size:11px;color:var(--muted);line-height:1.6;margin-top:2px}
 
 /* ---------- 使い方タブ ---------- */
 .flowbox{margin-top:4px}
@@ -313,7 +364,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <!-- ============ loading ============ -->
 <div id="loading">
   <div class="spinner"></div>
-  <h1>GasWipeLab v4.0</h1>
+  <h1>GasWipeLab v4.1</h1>
   <div id="load-status">初期化中…（初回のみ 30 秒ほどかかります）</div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:4%"></div></div>
 </div>
@@ -324,7 +375,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <header class="app" id="app-header" style="display:none">
   <div>
     <div class="logo">GasWipeLab</div>
-    <div class="ver">ワイピング条件 事前設定ツール v4.0</div>
+    <div class="ver">ワイピング条件 事前設定ツール v4.1</div>
   </div>
   <div class="spacer"></div>
   <button class="cal-badge" id="cal-badge" onclick="switchTab('calib')">未校正</button>
@@ -332,12 +383,8 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 
 <!-- ============ モード切替 ============ -->
 <div class="modebar" id="app-mode" style="display:none">
-  <button class="mode-btn active" id="mode-ml" onclick="switchMode('ml')">
-    実機モード<span>実績データ 14,390件</span>
-  </button>
-  <button class="mode-btn" id="mode-phys" onclick="switchMode('phys')">
-    理論モード<span>物理モデル</span>
-  </button>
+  <button class="mode-btn active" id="mode-ml" onclick="switchMode('ml')">実機モード</button>
+  <button class="mode-btn" id="mode-phys" onclick="switchMode('phys')">理論モード</button>
 </div>
 
 <!-- ============ nav ============ -->
@@ -363,8 +410,8 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   <button class="nav-btn active" id="nav-mldesign" onclick="switchTab('mldesign')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>条件設計
   </button>
-  <button class="nav-btn" id="nav-mlpredict" onclick="switchTab('mlpredict')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-5 3 3 5-7"/></svg>予測
+  <button class="nav-btn" id="nav-mlhmi" onclick="switchTab('mlhmi')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="1.5"/><path d="M9 20h6M12 17v3"/></svg>装置画面
   </button>
   <button class="nav-btn" id="nav-mlcompare" onclick="switchTab('mlcompare')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v18M16 3v18M3 8h18M3 16h18"/></svg>条件比較
@@ -440,7 +487,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 
   <div class="card">
     <h2>ほかのタブ</h2>
-    <div class="kv"><span><b>予測</b></span><b style="text-align:right">決めた条件で、表面／裏面／両面合計がいくつになるか。<br>1項目だけ振ったときの応答グラフも見られる</b></div>
+    <div class="kv"><span><b>装置画面</b></span><b style="text-align:right">決めた条件を、実機のYG装置監視画面と同じ並びで確認する。<br>表面／裏面／両面合計の予測、診断値、応答グラフも見られる</b></div>
     <div class="kv"><span><b>条件比較</b></span><b style="text-align:right">いまの条件と変更後を並べ、<br>どの項目がどれだけ効いたかを見る</b></div>
     <div class="kv"><span><b>理論モード</b></span><b style="text-align:right">実績にない条件を物理式で検討する。<br>ガス種・ノズルすき間など実績データに無い項目を扱える<br>（GLは浴温約600℃のため適用外）</b></div>
   </div>
@@ -522,14 +569,23 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 </div>
 
 <!-- ================================================================
-     実機 TAB 2 : 予測
+     実機 TAB 2 : 装置画面（実機HMIの並びで再現）
 ================================================================= -->
-<div id="tab-mlpredict" class="tab-content">
-  <div class="card">
-    <h2>この条件で出る付着量</h2>
-    <p class="sub">「条件設計」で入力した条件をそのまま使います。値を変えるとその場で予測し直します。</p>
-    <div id="mlpredict-out"></div>
+<div id="tab-mlhmi" class="tab-content">
+  <div class="note info" style="margin-top:0">
+    「条件設計」で決めた条件を、実機のYG装置監視画面と同じ並びで表示します。
+    値はすべて <b>ProCデータと予測モデル</b> から再現したもので、実機から直接読んでいるわけではありません。
+    <b>ProCに無い項目は「未取得」</b>と表示し、推測値は入れていません。
   </div>
+
+  <div id="hmi-screen"></div>
+
+  <div class="card">
+    <h2>診断値</h2>
+    <p class="sub">計算に必要な値が取れていない項目は、0で埋めずに「未取得」と表示します。</p>
+    <div id="hmi-diag"></div>
+  </div>
+
   <div class="card">
     <h2>操作量を振ったときの応答</h2>
     <p class="sub">
@@ -992,7 +1048,7 @@ function setGasSilent(id, gas){
    モード／タブ切替
 ================================================================== */
 const PHYS_TABS = ['design','quick','check','calib'];
-const ML_TABS   = ['mlhelp','mldesign','mlpredict','mlcompare'];
+const ML_TABS   = ['mlhelp','mldesign','mlhmi','mlcompare'];
 
 function switchMode(mode){
   mlState.mode = mode;
@@ -1015,7 +1071,7 @@ function switchTab(name){
   if (ML_TABS.includes(name)) mlState.tab = name;
   saveState();
   if (name==='check' && checkDirty) runCheck(false);
-  if (name==='mlpredict'){ resizeMlPlots(); runMlPredict(); }
+  if (name==='mlhmi'){ resizeMlPlots(); runMlPredict(); }
   if (name==='mlcompare') buildMlCompareFields();
 }
 
@@ -1397,15 +1453,117 @@ function applyMlProposal(i){
   runMlDesign();
 }
 
-/* ---------- 予測タブ ---------- */
+/* ---------- 装置画面タブ ---------- */
+const HMI_SOURCE_LABEL = {proc:'ProC', model:'予測', derived:'導出', none:'未取得'};
+
+/* 1マス。値だけでなく「どこから来た値か」を必ず添える。 */
+function hmiCell(f, opt){
+  if (!f) return '';
+  const o = opt || {};
+  const src = f.source || 'none';
+  // 未取得は値の枠自体に「未取得」と出るので、バッジは重ねない
+  const tag = src === 'none' ? '' : `<span class="tag ${src}">${HMI_SOURCE_LABEL[src]}</span>`;
+  const unv = f.confidence === 'unverified' && src !== 'none'
+    ? '<span class="tag unv">未確認</span>' : '';
+  const label = esc(o.label || f.label || '');
+  let body;
+  if (f.value === null || f.value === undefined || f.value === ''){
+    body = `<div class="cv none" title="${esc(f.note||'')}">未取得</div>`;
+  } else {
+    const v = (typeof f.value === 'number') ? fmt(f.value, o.dec===undefined?1:o.dec) : esc(f.value);
+    body = `<div class="cv ${src}${o.big?' big':''}" title="${esc(f.note||'')}">${v}` +
+           `${f.unit?`<span class="u">${esc(f.unit)}</span>`:''}</div>`;
+  }
+  return `<div class="cell"><div class="cl">${label}${tag}${unv}</div>${body}</div>`;
+}
+
+function renderHmiScreen(d){
+  const s = d.screen, n = s.nozzle, c = s.coating, r = s.rolls, a = s.air, o = s.other;
+  const cell = (f, opt) => hmiCell(f, opt);
+  let h = `<div class="hmi">
+    <div class="bar"><span class="t">${esc(s.title)}</span>
+      <span>${esc(s.line)}ライン</span>
+      <span class="meta">モデル版 ${esc(s.model_version)} ／ ProCデータからの再現</span></div>
+
+    <div class="legend">
+      <span><span class="tag proc">ProC</span> 実績データの列から</span>
+      <span><span class="tag model">予測</span> 実機モデルの出力</span>
+      <span><span class="tag derived">導出</span> ProC値から計算</span>
+      <span><span class="tag none">未取得</span> ProCに列が無い</span>
+      <span><span class="tag unv">未確認</span> 画面との対応が未確定</span>
+    </div>
+
+    <div class="grp"><div class="gt">コイル</div><div class="row c5">
+      ${cell(s.coil.order_no)}${cell(s.coil.coil_no)}
+      ${cell(s.coil.thickness,{dec:3})}${cell(s.coil.width,{dec:0})}${cell(s.coil.coating_code)}
+    </div></div>
+
+    <div class="grp"><div class="gt">メッキ付着量（両面合計は 表＋裏 で算出）</div><div class="row c5">
+      ${cell(c.back,{big:true})}${cell(c.total,{big:true})}${cell(c.front,{big:true})}
+      ${cell(c.device_total)}${cell(s.speed)}
+    </div></div>
+
+    <div class="grp"><div class="gt">ノズル（Yノズル位置は設備座標。鋼帯からの実距離ではありません）</div>
+    <div class="row c4">
+      ${cell(n.total_gap_ws,{dec:2})}${cell(n.total_gap_ds,{dec:2})}
+      ${cell(n.front_ws,{dec:2})}${cell(n.front_ds,{dec:2})}
+      ${cell(n.back_ws,{dec:2})}${cell(n.back_ds,{dec:2})}
+      ${cell(n.height_ws,{dec:1})}${cell(n.height_ds,{dec:1})}
+      ${cell(n.pressure_front,{dec:1})}${cell(n.pressure_back,{dec:1})}
+    </div></div>
+
+    <div class="grp"><div class="gt">ロール・浴</div><div class="row c5">
+      ${cell(r.support_roll_ws)}${cell(r.support_roll_ds)}
+      ${cell(r.collecting_ws,{dec:2})}${cell(r.collecting_ds,{dec:2})}${cell(r.pot_temp,{dec:0})}
+    </div></div>
+
+    <div class="grp"><div class="gt">空気系（3階層の圧力は別項目です）</div><div class="row c4">
+      ${cell(a.compressor_discharge_pressure)}${cell(a.wiping_header_pressure)}
+      ${cell(a.total_nozzle_flow,{dec:0})}${cell(a.nozzle_air_temp,{dec:0})}
+      ${cell(a.vent_valve_mv)}${cell(a.compressor_frequency)}${cell(a.active_compressor_pattern)}
+    </div></div>
+
+    <div class="grp"><div class="gt">その他</div><div class="row c4">
+      ${cell(o.weld_pot_front)}${cell(o.weld_pot_back)}
+      ${cell(o.weld_point_process)}${cell(o.baffle_plate)}
+    </div></div>
+
+    <div class="grp"><div class="gt">制御モード（状態は文字で表示します）</div>
+      <div class="modes">${s.control_modes.map(m =>
+        `<div class="mode"><div class="ml">${esc(m.label)}<span style="opacity:.6">（${esc(m.options)}）</span></div>
+         <div class="ms">${esc(m.state)}</div></div>`).join('')}</div>
+    </div>
+
+    <div class="foot">
+      ${esc(s.suppression.reason || '')}<br>
+      この画面は実機HMIの代替ではありません。PLCへの書込みは行いません。
+    </div>
+  </div>`;
+  $('hmi-screen').innerHTML = h;
+
+  // 診断値
+  const rows = d.diagnostics.map(x => {
+    const val = x.available
+      ? `<span class="dv">${x.value>=0?'+':''}${fmt(x.value,2)} ${esc(x.unit)}</span>`
+      : `<span class="dv na">未取得</span>`;
+    return `<div class="diagrow ${x.warning?'warn':''}">
+      <div class="dl">${esc(x.label)}${x.note?`<div class="diagnote">${esc(x.note)}</div>`:''}</div>${val}</div>`;
+  }).join('');
+  const cc = d.coating_consistency;
+  const ccNote = cc.available
+    ? `<div class="note ${cc.consistent?'ok':'warn'}">装置側の和との整合差 ${cc.difference>=0?'+':''}${fmt(cc.difference,1)} g/m²。${esc(cc.note)}</div>`
+    : `<div class="note plain">${esc(cc.note)}</div>`;
+  $('hmi-diag').innerHTML = rows + ccNote;
+}
+
 async function runMlPredict(){
   if (!mlBoot || !mlState.cond.line) return;
   let data, curves;
   try {
-    data = await busy('予測を計算中…', () => py('ml_predict', mlState.cond));
-    curves = await busy('応答カーブを計算中…', () => py('ml_curves', mlState.cond));
+    data   = await busy('装置画面を組み立て中…', () => py('hmi_screen', {condition: mlState.cond}));
+    curves = await busy('応答カーブを計算中…',   () => py('ml_curves', mlState.cond));
   } catch(e){ return; }
-  $('mlpredict-out').innerHTML = mlPredCard(data.prediction, mlState.target);
+  renderHmiScreen(data);
   drawMlCurve('plot-ml-position', curves.curves.nozzle_position);
   drawMlCurve('plot-ml-speed',    curves.curves.line_speed);
   drawMlCurve('plot-ml-pressure', curves.curves.nozzle_pressure);
@@ -2271,6 +2429,10 @@ async function installPythonModules(){
     'python/gaswipelab/ml/ood.py',
     'python/gaswipelab/ml/predictor.py',
     'python/gaswipelab/services/machine_design_service.py',
+    'python/gaswipelab/hmi/__init__.py',
+    'python/gaswipelab/hmi/control_modes.py',
+    'python/gaswipelab/hmi/screen.py',
+    'python/gaswipelab/hmi/diagnostics.py',
   ];
   for (const f of files){
     const text = await (await fetch(f)).text();
@@ -2322,7 +2484,7 @@ import gaswipelab.web_api as _api
     clearTimeout(window._rz);
     window._rz = setTimeout(() => {
       if ($('tab-check').classList.contains('active')) drawDiagram(state.check);
-      if ($('tab-mlpredict').classList.contains('active')) resizeMlPlots();
+      if ($('tab-mlhmi').classList.contains('active')) resizeMlPlots();
     }, 200);
   });
   const dz = $('drop');

@@ -1,5 +1,5 @@
-// Service Worker — GasWipeLab v4.0 オフラインキャッシュ
-const CACHE = 'gaswipelab-v4.0';
+// Service Worker — GasWipeLab v4.1 オフラインキャッシュ
+const CACHE = 'gaswipelab-v4.1';
 const STATIC = [
   './',
   './index.html',
@@ -31,6 +31,10 @@ const STATIC = [
   './python/gaswipelab/ml/ood.py',
   './python/gaswipelab/ml/predictor.py',
   './python/gaswipelab/services/machine_design_service.py',
+  './python/gaswipelab/hmi/__init__.py',
+  './python/gaswipelab/hmi/control_modes.py',
+  './python/gaswipelab/hmi/screen.py',
+  './python/gaswipelab/hmi/diagnostics.py',
   './models/manifest.json',
   './models/reference.json',
   './models/GI_CF.json',

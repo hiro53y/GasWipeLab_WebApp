@@ -32,6 +32,8 @@ from gaswipelab.services.design_service import (
     SPEED_MIN_MPM,
     DesignService,
 )
+from gaswipelab.hmi import diagnostics as hmi_diagnostics
+from gaswipelab.hmi import screen as hmi_screen_module
 from gaswipelab.ml.ood import RangeChecker
 from gaswipelab.ml.predictor import ERROR_REFERENCE, GasWipingPredictor, OutOfScopeError
 from gaswipelab.services.machine_design_service import (
@@ -323,6 +325,36 @@ def ml_compare(payload_json: str) -> str:
     try:
         payload = json.loads(payload_json)
         return _ok({"comparison": _machine().compare(payload["before"], payload["after"])})
+    except OutOfScopeError as exc:
+        return _dumps({"ok": False, "out_of_scope": True, "error": str(exc)})
+    except Exception as exc:
+        return _error(exc)
+
+
+def hmi_screen(payload_json: str) -> str:
+    """実機YG装置監視画面の再現データ。
+
+    予測は既存の実機モデルをそのまま呼ぶだけで、モデルや前処理には手を入れていない。
+    ProCに存在しない項目は推測で埋めず、未取得として返す。
+    """
+    try:
+        payload = json.loads(payload_json)
+        condition = payload.get("condition", payload)
+        modes = payload.get("control_modes")
+        service = _machine()
+        prediction = service.predict(condition)
+        screen = hmi_screen_module.build_screen(
+            condition, prediction, modes, model_version=service.predictor.model_version)
+        return _ok({
+            "screen": screen,
+            "diagnostics": hmi_diagnostics.compute(screen),
+            "coating_consistency": hmi_diagnostics.coating_consistency(
+                screen["coating"]["device_total"]["value"],
+                screen["coating"]["front"]["value"],
+                screen["coating"]["back"]["value"],
+            ),
+            "prediction": prediction,
+        })
     except OutOfScopeError as exc:
         return _dumps({"ok": False, "out_of_scope": True, "error": str(exc)})
     except Exception as exc:
