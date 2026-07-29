@@ -159,7 +159,7 @@ def fit_multi_factor(
     Parameters
     ----------
     actual : ndarray
-        実測値（片面目付 g/m²）。
+        実測値（片面めっき付着量 g/m²）。
     predict_func : callable(calibration_dict) -> ndarray
         係数 dict を受け取り予測値配列を返す関数。
         N サンプルそれぞれを analyze して得られる cw_one_side_gm2 を返すラッパーを想定。

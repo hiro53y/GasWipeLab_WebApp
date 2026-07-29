@@ -34,6 +34,20 @@ FLOW_SIGMA_LIMIT = 3.0
 #: CH_direct と CF+CG の食い違いがこれを超えたら注意（引継ぎ仕様の診断指標）。
 CONSISTENCY_GAP_LIMIT_GM2 = 8.0
 
+#: 画面で選べる範囲。実績が狭くても設備仕様の範囲までは選べるようにする。
+#: ここを外れた入力は外挿（境界の傾きを延長）で計算し、実績範囲外として警告する。
+UI_RANGE_OVERRIDES: dict[str, tuple[float, float]] = {
+    "製品板厚_mm": (0.20, 3.2),
+    "製品板幅_mm": (600.0, 1350.0),
+    "中央速度_m_min": (40.0, 165.0),
+}
+
+#: 上表にない項目は、実績スパンのこの割合だけ外側へ広げて選べるようにする。
+UI_RANGE_EXPAND = 0.25
+
+#: 目標めっき付着量（両面合計）の入力範囲。
+TARGET_RANGE_GM2 = (40.0, 300.0)
+
 
 def _worse(a: str, b: str) -> str:
     return a if _RANK[a] >= _RANK[b] else b
@@ -76,6 +90,70 @@ class RangeChecker:
             return None
         lo, hi = stat[low], stat[high]
         return (lo, hi) if hi > lo else (stat["min"], stat["max"])
+
+    def ui_bounds(self, line: str, feature: str) -> tuple[float, float] | None:
+        """画面のスライダーで選べる範囲。実績より広く取る。
+
+        設備仕様として指定された項目は固定値、それ以外は実績スパンを外側へ広げる。
+        """
+        override = UI_RANGE_OVERRIDES.get(feature)
+        if override:
+            return override
+        info = self.lines.get(line)
+        stat = info["features"].get(feature) if info else None
+        if not stat:
+            return None
+        low, high = float(stat["min"]), float(stat["max"])
+        span = high - low
+        if span <= 0:
+            return (low - 1.0, high + 1.0)
+        margin = span * UI_RANGE_EXPAND
+        expanded_low = low - margin
+        # 実績が全て0以上の量（位置・圧力・流量など）は負にしない。
+        # WS-DS差のように実績が負を含む項目は、そのまま下へ広げる。
+        if low >= 0.0:
+            expanded_low = max(0.0, expanded_low)
+        return (expanded_low, high + margin)
+
+    def ui_ranges(self, line: str) -> dict[str, list[float]]:
+        """画面へ渡すスライダー範囲一式。"""
+        info = self.lines.get(line)
+        if not info:
+            return {}
+        out: dict[str, list[float]] = {}
+        for feature in info["features"]:
+            bounds = self.ui_bounds(line, feature)
+            if bounds:
+                out[feature] = [round(bounds[0], 4), round(bounds[1], 4)]
+        return out
+
+    def trends(self, line: str) -> dict[str, dict[str, float]]:
+        """実データから求めた偏効果（記号内で中心化した多変量回帰の係数）。
+
+        モデルの局所傾きが実データと逆向きになったときの検証と、
+        効果が特定できない項目を提案から外す判定に使う。
+        """
+        info = self.lines.get(line)
+        return (info or {}).get("trends", {})
+
+    def trend_sign(self, line: str, feature: str) -> float:
+        """実データ上の効果の向き。判定できないときは 0。"""
+        entry = self.trends(line).get(feature)
+        if not entry:
+            return 0.0
+        # ばらつき全体でほとんど動かない項目は、向きも信頼できない
+        if entry.get("swing_gm2", 0.0) < 0.5:
+            return 0.0
+        beta = entry.get("beta_gm2_per_unit", 0.0)
+        return 1.0 if beta > 0 else (-1.0 if beta < 0 else 0.0)
+
+    def model_ranges(self, line: str) -> dict[str, tuple[float, float]]:
+        """モデルが実際に学習した範囲。外挿量の判定に使う。"""
+        info = self.lines.get(line)
+        if not info:
+            return {}
+        return {name: (float(stat["min"]), float(stat["max"]))
+                for name, stat in info["features"].items() if stat}
 
     def expected_flow(self, line: str, pressure_kpa: float, speed_mpm: float) -> float | None:
         """圧力・速度から実績どおりのノズル吹込流量を推定する。"""

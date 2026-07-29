@@ -59,6 +59,78 @@ class GasWipingPredictor:
         entry = self.baselines.get(key)
         return sorted(entry["by_code"]) if entry else []
 
+    # ------------------------------------------------------------------
+    # 学習範囲の外側を「案分」で求める
+    #
+    # 勾配ブースティング木は学習データの外側では応答が頭打ちになり、
+    # いくら値を動かしても予測が変わらなくなる。設備仕様としては選べる範囲まで
+    # 計算できるようにするため、境界での傾きをそのまま直線で延長する。
+    # これは物理的な裏づけのある外挿ではないので、必ず範囲外として警告する。
+    # ------------------------------------------------------------------
+    def _clamp(self, record: dict[str, Any],
+               ranges: dict[str, tuple[float, float]]) -> tuple[dict[str, Any], list[tuple]]:
+        clamped = dict(record)
+        outside: list[tuple] = []
+        for feature, (low, high) in ranges.items():
+            raw = to_number(record.get(feature))
+            if raw != raw:  # NaN
+                continue
+            if raw < low:
+                clamped[feature] = low
+                outside.append((feature, low, raw - low, high - low))
+            elif raw > high:
+                clamped[feature] = high
+                outside.append((feature, high, raw - high, high - low))
+        return clamped, outside
+
+    def _predict_extrapolated(self, record: dict[str, Any], key: str,
+                              ranges: dict[str, tuple[float, float]] | None,
+                              trend_signs: dict[str, float] | None = None,
+                              ) -> tuple[float, list[dict[str, Any]]]:
+        if not ranges:
+            return self._predict_one(record, key), []
+        clamped, outside = self._clamp(record, ranges)
+        base = self._predict_one(clamped, key)
+        if not outside:
+            return base, []
+        signs = trend_signs or {}
+        total = base
+        detail: list[dict[str, Any]] = []
+        for feature, boundary, delta, span in outside:
+            # 境界の内側との差から傾きを求め、はみ出した分だけ直線で延ばす。
+            # 木モデルは学習範囲の端で応答が平らになりやすいので、傾きが0のときは
+            # 内側へ窓を広げて、実際に効いている区間の傾きを拾う。
+            slope = 0.0
+            for fraction in (0.05, 0.20, 0.40):
+                step = max(abs(span) * fraction, 1.0e-6)
+                inward = boundary - step if delta > 0 else boundary + step
+                probe = dict(clamped)
+                probe[feature] = inward
+                denominator = boundary - inward
+                if not denominator:
+                    continue
+                slope = (base - self._predict_one(probe, key)) / denominator
+                if abs(slope) > 1.0e-9:
+                    break
+            # 学習範囲の端は事例が乏しく、傾きが実データと逆向きに出ることがある。
+            # 実データの偏効果と符号が合わないときは延長せず、境界の値で止める。
+            # （物理的にありえない向きの推奨を出さないため）
+            expected = signs.get(feature, 0.0)
+            saturated = bool(expected) and slope * expected < 0.0
+            if saturated:
+                slope = 0.0
+            contribution = slope * delta
+            total += contribution
+            detail.append({
+                "feature": feature,
+                "boundary": round(boundary, 4),
+                "excess": round(delta, 4),
+                "slope_per_unit": round(slope, 6),
+                "contribution_gm2": round(contribution, 3),
+                "saturated": saturated,
+            })
+        return total, detail
+
     def _predict_one(self, record: dict[str, Any], key: str) -> float:
         entry = self.meta[key]
         cat_indices = set(entry["categorical_feature_indices"])
@@ -80,7 +152,14 @@ class GasWipingPredictor:
             raw += float(baseline["by_code"].get(code, baseline["global"]))
         return raw
 
-    def predict(self, record: dict[str, Any]) -> dict[str, Any]:
+    def predict(self, record: dict[str, Any],
+                ranges: dict[str, tuple[float, float]] | None = None,
+                trend_signs: dict[str, float] | None = None) -> dict[str, Any]:
+        """1条件の予測。
+
+        `ranges` を渡すと、その範囲を外れた入力について境界の傾きで外挿する。
+        省略時（既定）は従来どおりの素の推論で、結果は完全に同一になる。
+        """
         line = to_category(record.get("line"))
         code = to_category(record.get("coating_code"))
         if line not in ("GI", "GL"):
@@ -89,10 +168,13 @@ class GasWipingPredictor:
             raise OutOfScopeError(
                 "付着量記号305はラインスタート時のウォーマーコイルで製品ではないため、予測対象外です。"
             )
-        cf = self._predict_one(record, f"{line}_CF")
-        cg = self._predict_one(record, f"{line}_CG")
-        ch_direct = self._predict_one(record, f"{line}_CH")
+        cf, cf_detail = self._predict_extrapolated(record, f"{line}_CF", ranges, trend_signs)
+        cg, cg_detail = self._predict_extrapolated(record, f"{line}_CG", ranges, trend_signs)
+        ch_direct, _ = self._predict_extrapolated(record, f"{line}_CH", ranges, trend_signs)
         ch_sum = cf + cg
+        details = cf_detail + cg_detail
+        extrapolated = sorted({d["feature"] for d in details})
+        saturated = sorted({d["feature"] for d in details if d.get("saturated")})
         return {
             "model_version": self.model_version,
             "line": line,
@@ -103,9 +185,16 @@ class GasWipingPredictor:
             "CH_direct_pred_g_m2": ch_direct,
             "CH_direct_minus_sum_g_m2": ch_direct - ch_sum,
             "error_reference": ERROR_REFERENCE[line],
+            "extrapolated_features": extrapolated,
+            "saturated_features": saturated,
+            "extrapolation_detail": details,
         }
 
-    def predict_ch(self, record: dict[str, Any]) -> float:
+    def predict_ch(self, record: dict[str, Any],
+                   ranges: dict[str, tuple[float, float]] | None = None,
+                   trend_signs: dict[str, float] | None = None) -> float:
         """逆算ループ用。両面合計のみを返す（CH_direct を計算しないぶん速い）。"""
         line = to_category(record.get("line"))
-        return self._predict_one(record, f"{line}_CF") + self._predict_one(record, f"{line}_CG")
+        cf, _ = self._predict_extrapolated(record, f"{line}_CF", ranges, trend_signs)
+        cg, _ = self._predict_extrapolated(record, f"{line}_CG", ranges, trend_signs)
+        return cf + cg

@@ -4,14 +4,14 @@
     1. ガス状態（理想気体・等エントロピ圧縮性ノズル流れ）
     2. 衝突噴流の壁面圧力・せん断分布（Elsaadawy 2007 / Ellen-Tu 相関）
     3. 薄膜方程式の数値解（最大流束原理）→ 最終液膜厚さ h_f
-    4. 目付 = rho_L(液体) × h_f（質量保存。凝固で質量は変わらない）
+    4. めっき付着量 = rho_L(液体) × h_f（質量保存。凝固で質量は変わらない）
     5. スプラッシュ限界（Gosset-Buchlin We/We* 判定）
     6. 不確かさ・モデル信頼度評価
 
 校正係数の適用（物理量レベルで適用する）:
     pressure_factor → プレナムゲージ圧, gap_factor → スロットギャップ,
     distance_factor → ノズル-鋼板距離, speed_factor → 通板速度,
-    scale_factor → 最終膜厚, offset_gm2 → 目付オフセット
+    scale_factor → 最終膜厚, offset_gm2 → めっき付着量オフセット
 """
 from __future__ import annotations
 
@@ -171,7 +171,7 @@ class AnalysisService:
         )
         h_f = film.film_thickness_m * scale_factor
 
-        # --- 4. 目付（質量保存: 液膜質量 = rho_L × h_f） ---
+        # --- 4. めっき付着量（質量保存: 液膜質量 = rho_L × h_f） ---
         film_cfg = self.coefficients.get("film", {})
         alloy_floor_gm2 = float(film_cfg.get("unwipeable_alloy_layer_gm2", 9.0))
         cw_raw = rho_l * h_f * 1000.0  # [g/m^2] (h in m, rho in kg/m^3)
@@ -218,9 +218,9 @@ class AnalysisService:
                 f"推定値が払拭不能なFe-Zn合金層相当（約{alloy_floor_gm2:.0f} g/m²）を下回ったため、下限値を表示しています。"
             )
         if target_status == "未達":
-            warnings.append(f"推定目付が目標を下回っています（達成率 {achievement_ratio * 100:.1f}%）。")
+            warnings.append(f"推定めっき付着量が目標を下回っています（達成率 {achievement_ratio * 100:.1f}%）。")
         elif target_status == "過剰":
-            warnings.append(f"推定目付が目標を上回っています（達成率 {achievement_ratio * 100:.1f}%）。")
+            warnings.append(f"推定めっき付着量が目標を上回っています（達成率 {achievement_ratio * 100:.1f}%）。")
         melting_point = float(zinc.get("melting_point_c", 419.5))
         if cond.bath_temp_c < melting_point:
             warnings.append(f"浴温が亜鉛融点（{melting_point:.1f}℃）を下回っています。入力値を確認してください。")
@@ -296,7 +296,7 @@ class AnalysisService:
     def _evaluate_model_validity(self, cond: AnalysisCondition, flow, jet, splash, cw_one: float) -> dict[str, Any]:
         """モデル適用性と概算不確かさを評価する。
 
-        基準: Elsaadawy 2007 は実機CGL（目付≦75 g/m²・近接場）でコイル平均偏差≦8%。
+        基準: Elsaadawy 2007 は実機CGL（めっき付着量≦75 g/m²・近接場）でコイル平均偏差≦8%。
         本実装は分布相関＋数値解で同系統のため、検証域内の基準不確かさを12%とし、
         外挿要因ごとに加算する。精度保証ではなく操業判断の補助情報。
         """
@@ -314,7 +314,7 @@ class AnalysisService:
             notes.append("ノズル-鋼板距離が大きく、外挿比率が高い条件です。")
         if cw_one > float(cfg.get("validated_cw_max_gm2", 75.0)):
             uncertainty += float(cfg.get("high_cw_add_percent", 8.0))
-            notes.append("推定目付が75 g/m²超です。文献モデルの検証精度が低下する領域です（Elsaadawy 2007）。")
+            notes.append("推定めっき付着量が75 g/m²超です。文献モデルの検証精度が低下する領域です（Elsaadawy 2007）。")
         if flow.choked:
             uncertainty += float(cfg.get("choked_add_percent", 8.0))
             notes.append("チョーク条件のため、衝突圧スケールの線形性が崩れる可能性があります。")
@@ -323,13 +323,13 @@ class AnalysisService:
             notes.append("Mach数が0.8超です。衝突圧相関は非圧縮CFDベースのため誤差が増えます。")
         if splash.score >= 1.0:
             uncertainty += float(cfg.get("splash_high_add_percent", 8.0))
-            notes.append("スプラッシュ発生域のため、液滴飛散・ノズル付着により実目付が乱れる可能性があります。")
+            notes.append("スプラッシュ発生域のため、液滴飛散・ノズル付着により実めっき付着量が乱れる可能性があります。")
         if cond.nozzle_strip_distance_mm < 3.0:
             uncertainty += float(cfg.get("low_distance_add_percent", 10.0))
         if cond.bath_temp_c < float(cfg.get("low_bath_temp_c", 450.0)):
             uncertainty += float(cfg.get("bath_temperature_add_percent", 5.0))
             notes.append(
-                "浴温450℃未満では鋼帯近傍の微視的凝固により実効粘度が上昇し、実目付が推定より厚くなる傾向があります（JFE 2023）。"
+                "浴温450℃未満では鋼帯近傍の微視的凝固により実効粘度が上昇し、実めっき付着量が推定より厚くなる傾向があります（JFE 2023）。"
             )
 
         high_max = float(cfg.get("confidence_high_max_percent", 18.0))
@@ -433,11 +433,11 @@ class AnalysisService:
         n_grid: int = 12,
         n_candidates: int = 3,
     ) -> dict[str, Any]:
-        """目標片面目付からワイピング条件を逆算する（グリッドサーチ＋精密化）。
+        """目標片面めっき付着量からワイピング条件を逆算する（グリッドサーチ＋精密化）。
 
         Parameters
         ----------
-        target_cw_gm2 : 目標片面目付 [g/m²]
+        target_cw_gm2 : 目標片面めっき付着量 [g/m²]
         line_speed_mpm / strip_width_mm / bath_temp_c : 固定する操業条件
         fixed_* : None で探索変数、数値で固定値
         n_grid   : 各次元のグリッド数（自由変数 k 本 → n_grid^k 評価）
@@ -605,7 +605,7 @@ class AnalysisService:
         feasible = best_err <= target_cw_gm2 * 0.05
         if best_err > target_cw_gm2 * 0.3:
             message = (
-                f"目標目付 {target_cw_gm2:.1f} g/m² に近い条件を見つけられませんでした"
+                f"目標めっき付着量 {target_cw_gm2:.1f} g/m² に近い条件を見つけられませんでした"
                 f"（最小誤差 {best_err:.1f} g/m²）。固定条件を解除するか操業範囲を見直してください。"
             )
         elif best_err > target_cw_gm2 * 0.1:
@@ -614,7 +614,7 @@ class AnalysisService:
                 "精度が低い場合は固定条件の見直しをお勧めします。"
             )
         else:
-            message = f"目標目付 {target_cw_gm2:.1f} g/m² に対する推奨ワイピング条件を算出しました。"
+            message = f"目標めっき付着量 {target_cw_gm2:.1f} g/m² に対する推奨ワイピング条件を算出しました。"
 
         return {"candidates": candidates, "feasible": feasible, "message": message}
 
@@ -640,7 +640,7 @@ class AnalysisService:
                     "通板速度 [m/min]": cond["line_speed_mpm"],
                     "ノズル-鋼板距離 [mm]": cond["nozzle_strip_distance_mm"],
                     "ノズルすき間 [mm]": cond["nozzle_gap_mm"],
-                    "推定片面目付 [g/m²]": result["cw_one_side_gm2"],
+                    "推定片面めっき付着量 [g/m²]": result["cw_one_side_gm2"],
                     "推定膜厚 [µm]": result["film_thickness_um"],
                     "スプラッシュ注意レベル": result["splash_level"],
                     "備考": note,

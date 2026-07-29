@@ -1,7 +1,7 @@
 """design_service.py — 操業条件の設計（逆算）サービス
 
 物理モデル（analysis_service 以下）には一切手を加えず、その上で
-「目標片面目付を満たす操業条件」を探索する層だけを提供する。
+「目標片面めっき付着量を満たす操業条件」を探索する層だけを提供する。
 計算は既存の AnalysisService.analyze() をそのまま呼ぶため、
 モデル精度・理論・校正係数の扱いは従来と同一。
 
@@ -9,14 +9,14 @@
 
 1. design()
    設備・操業側で固定したい条件（ノズルすき間・通板速度・浴温・板幅・ガス種）
-   を与え、目標片面目付を満たす「噴射圧力」「ノズル距離」を求める。
+   を与え、目標片面めっき付着量を満たす「噴射圧力」「ノズル距離」を求める。
    安全に達成できる解が無い場合は、
        通板速度 → ノズルすき間 → 浴温
    の優先順で「どう変えればよいか」を具体値で提案する。
    板幅・ガス種は製品仕様／設備仕様であり、変更提案の対象にしない。
 
 2. quick_design()
-   ガス種・板幅・目標片面目付だけから、実操業として妥当な条件一式
+   ガス種・板幅・目標片面めっき付着量だけから、実操業として妥当な条件一式
    （ノズルすき間・通板速度・浴温・噴射圧力・ノズル距離）を提案する。
 """
 from __future__ import annotations
@@ -74,7 +74,7 @@ _SPLASH_PENALTY = {"低": 0.0, "中": 1.0, "高": 4.0}
 
 
 class DesignService:
-    """目標目付から操業条件を逆算するサービス。"""
+    """目標めっき付着量から操業条件を逆算するサービス。"""
 
     def __init__(self, analysis_service: AnalysisService | None = None) -> None:
         self.analysis = analysis_service or AnalysisService()
@@ -118,9 +118,9 @@ class DesignService:
         cal: dict,
         max_iter: int = 22,
     ) -> tuple[float, float, dict] | None:
-        """ノズル距離を固定し、目標目付になる噴射圧力を二分法で求める。
+        """ノズル距離を固定し、目標めっき付着量になる噴射圧力を二分法で求める。
 
-        片面目付は噴射圧力に対して単調減少（圧力↑ → ワイピング強 → 目付↓）。
+        片面めっき付着量は噴射圧力に対して単調減少（圧力↑ → ワイピング強 → めっき付着量↓）。
         探索範囲内で到達できない場合は None を返す。
 
         Returns
@@ -240,7 +240,7 @@ class DesignService:
         return float(score)
 
     def _sensitivity(self, base: dict, pressure: float, distance: float, cal: dict) -> dict[str, float]:
-        """現場で使う「1単位動かすと目付が何 g/m² 変わるか」を中心差分で求める。"""
+        """現場で使う「1単位動かすとめっき付着量が何 g/m² 変わるか」を中心差分で求める。"""
         d_pressure = max(0.5, 0.03 * pressure)
         d_distance = max(0.3, 0.03 * distance)
         speed = float(base["line_speed_mpm"])
@@ -269,7 +269,7 @@ class DesignService:
     # 内部: 到達可能範囲
     # ==============================================================
     def reachable_range(self, base: dict, cal: dict) -> dict[str, float]:
-        """現在の固定条件で作れる片面目付の範囲（探索レンジ内）。"""
+        """現在の固定条件で作れる片面めっき付着量の範囲（探索レンジ内）。"""
         thinnest = self._cw(base, PRESSURE_MAX_KPA, DISTANCE_MIN_MM, cal)
         thickest = self._cw(base, PRESSURE_MIN_KPA, DISTANCE_MAX_MM, cal)
         return {"min_gm2": round(float(thinnest), 1), "max_gm2": round(float(thickest), 1)}
@@ -300,7 +300,7 @@ class DesignService:
         target_gm2: float,
         calibration: dict | None = None,
     ) -> dict[str, Any]:
-        """固定条件のもとで目標目付を満たす噴射圧力・ノズル距離を求める。
+        """固定条件のもとで目標めっき付着量を満たす噴射圧力・ノズル距離を求める。
 
         Returns
         -------
@@ -309,7 +309,7 @@ class DesignService:
                           / "infeasible"（探索範囲で達成不可）
             candidates  : 推奨条件（rank順・最大3件）
             proposals   : 固定条件の変更提案（優先順: 通板速度→すき間→浴温）
-            reachable   : 到達可能な片面目付の範囲
+            reachable   : 到達可能な片面めっき付着量の範囲
         """
         cal = calibration if calibration is not None else load_calibration_coefficients()
         target = float(np.clip(target_gm2, 10.0, 300.0))
@@ -423,7 +423,7 @@ class DesignService:
     def _search_combined_change(self, base: dict, target_gm2: float, cal: dict) -> dict[str, Any] | None:
         """単独変更で解決しない場合に、通板速度とノズルすき間の同時変更を探す。
 
-        浴温は実操業範囲（450〜475℃）での目付への影響が数%と小さく、
+        浴温は実操業範囲（450〜475℃）でのめっき付着量への影響が数%と小さく、
         同時変更に加えても解の有無をほとんど変えないため対象にしない。
         """
         current_speed = float(base["line_speed_mpm"])
@@ -483,10 +483,10 @@ class DesignService:
     def _change_note(key: str, label: str, current: float, value: float, unit: str, digits: int) -> str:
         direction = "上げる" if value > current else "下げる"
         reason = {
-            "line_speed_mpm": "通板速度は持ち上げ液膜量を直接変えるため、目付調整の第一手段です。",
+            "line_speed_mpm": "通板速度は持ち上げ液膜量を直接変えるため、めっき付着量調整の第一手段です。",
             "nozzle_gap_mm": "ノズルすき間は噴流の強さと広がりを変えます。機械調整が必要です。",
             "bath_temp_c": (
-                "浴温は亜鉛の粘度を変えますが、実操業範囲での目付への影響は数%と小さく、"
+                "浴温は亜鉛の粘度を変えますが、実操業範囲でのめっき付着量への影響は数%と小さく、"
                 "浴全体・合金化にも影響するため最後の手段です。"
             ),
         }[key]
@@ -581,7 +581,7 @@ class DesignService:
         gap_options: tuple[float, ...] = (0.8, 1.0, 1.2, 1.5),
         calibration: dict | None = None,
     ) -> dict[str, Any]:
-        """ガス種・板幅・目標目付だけから、実操業として妥当な条件一式を提案する。
+        """ガス種・板幅・目標めっき付着量だけから、実操業として妥当な条件一式を提案する。
 
         考え方: 標準浴温（既定 460℃）を前提に、ノズルすき間ごとに
         「目標を安全に達成できる最大通板速度」を求め、
@@ -752,7 +752,7 @@ class DesignService:
         points: int = 25,
         calibration: dict | None = None,
     ) -> dict[str, Any]:
-        """噴射圧力・ノズル距離・通板速度それぞれに対する片面目付の応答曲線。"""
+        """噴射圧力・ノズル距離・通板速度それぞれに対する片面めっき付着量の応答曲線。"""
         cal = calibration if calibration is not None else load_calibration_coefficients()
         base = dict(condition)
         base.setdefault("project_name", "ResponseCurve")
@@ -786,7 +786,7 @@ class DesignService:
         points: int = 15,
         calibration: dict | None = None,
     ) -> dict[str, Any]:
-        """噴射圧力 × ノズル距離 の片面目付マップ（等高線表示用）。"""
+        """噴射圧力 × ノズル距離 の片面めっき付着量マップ（等高線表示用）。"""
         cal = calibration if calibration is not None else load_calibration_coefficients()
         base = dict(condition)
         base.setdefault("project_name", "CoatingMap")

@@ -10,7 +10,7 @@ CatBoost モデルを前向きに評価して数値的に反転する。
 
 変更提案の優先順位（ユーザー承認済み）:
     1. Yノズル位置   … 実績で最も効くレバー（記号内相関 GI +0.42 / GL +0.35）
-    2. 通板速度      … 効きは弱い（速度が上がると持ち出しが増え目付は増加）
+    2. 通板速度      … 効きは弱い（速度が上がると持ち出しが増えめっき付着量は増加）
     3. ノズル圧力    … 実績ではほぼ固定。動かすと流量も連動させる必要がある
 提案しない項目: 製品板厚・製品板幅・付着量記号・ライン（製品仕様/設備仕様のため）
 """
@@ -20,7 +20,7 @@ import math
 from typing import Any, Callable
 
 from gaswipelab.ml.ood import CAUTION, IN_RANGE, OUT_OF_DISTRIBUTION, RangeChecker
-from gaswipelab.ml.predictor import GasWipingPredictor
+from gaswipelab.ml.predictor import ERROR_REFERENCE, GasWipingPredictor
 
 #: 目標に到達したとみなす許容差 [g/m²]。両面合計に対する値。
 SOLVE_TOLERANCE_GM2 = 1.0
@@ -86,11 +86,24 @@ LEVERS: tuple[Lever, ...] = (
     Lever("nozzle_pressure", "ノズル圧力", "kPa", 2, FRONT_PRESSURE, _apply_pressure),
 )
 
+#: レバーが動かす列（効果の大きさを合算して評価するため）
+LEVER_FEATURES: dict[str, tuple[str, ...]] = {
+    "nozzle_position": (FRONT_POSITION, BACK_POSITION),
+    "line_speed": (SPEED,),
+    "nozzle_pressure": (FRONT_PRESSURE, BACK_PRESSURE),
+}
+
+#: 実績のばらつき全体を使ってもこれ未満しか動かない項目は、変更提案に使わない。
+#: 例: GLのノズル圧力は実績が 9.9〜14.4 kPa と狭く、効果を実績から特定できない。
+MIN_LEVER_EFFECT_GM2 = 2.0
+
 
 class MachineDesignService:
     def __init__(self, predictor: GasWipingPredictor, checker: RangeChecker) -> None:
         self.predictor = predictor
         self.checker = checker
+        self._range_cache: dict[str, dict[str, tuple[float, float]]] = {}
+        self._sign_cache: dict[str, dict[str, float]] = {}
 
     # ------------------------------------------------------------------
     def _sync_flow(self, condition: dict[str, Any], line: str) -> None:
@@ -104,11 +117,43 @@ class MachineDesignService:
         if expected is not None:
             condition[FLOW] = round(expected, 1)
 
+    def _ranges(self, line: str) -> dict[str, tuple[float, float]]:
+        """外挿の基準になる学習範囲。ライン単位でキャッシュする。"""
+        cached = self._range_cache.get(line)
+        if cached is None:
+            cached = self.checker.model_ranges(line)
+            self._range_cache[line] = cached
+        return cached
+
+    def _signs(self, line: str) -> dict[str, float]:
+        """実データ上の効果の向き。外挿を実データと逆向きに延ばさないために使う。"""
+        cached = self._sign_cache.get(line)
+        if cached is None:
+            cached = {name: self.checker.trend_sign(line, name)
+                      for name in self.checker.trends(line)}
+            self._sign_cache[line] = cached
+        return cached
+
+    def lever_effect(self, line: str, lever: "Lever") -> float:
+        """そのレバーを実績のばらつき全体で動かしたときのめっき付着量の変化量 [g/m²]。
+
+        表裏をまとめて動かすレバーは、両方の効果を合算して評価する。
+        """
+        trends = self.checker.trends(line)
+        total = 0.0
+        for feature in LEVER_FEATURES.get(lever.key, (lever.driver,)):
+            entry = trends.get(feature)
+            if entry:
+                total += abs(float(entry.get("swing_gm2", 0.0)))
+        return total
+
     def _ch(self, condition: dict[str, Any]) -> float:
-        return self.predictor.predict_ch(condition)
+        line = str(condition.get("line", "")).strip()
+        return self.predictor.predict_ch(condition, self._ranges(line), self._signs(line))
 
     def _evaluate(self, condition: dict[str, Any]) -> dict[str, Any]:
-        result = self.predictor.predict(condition)
+        line = str(condition.get("line", "")).strip()
+        result = self.predictor.predict(condition, self._ranges(line), self._signs(line))
         judgement = self.checker.evaluate(
             result["line"], result["coating_code"], condition,
             consistency_gap=result["CH_direct_minus_sum_g_m2"],
@@ -121,12 +166,16 @@ class MachineDesignService:
 
     # ------------------------------------------------------------------
     def _solve_lever(self, base: dict[str, Any], lever: Lever, target: float,
-                     line: str, code: str) -> dict[str, Any] | None:
+                     line: str, code: str, wide: bool = False) -> dict[str, Any] | None:
         """1本のレバーだけを動かして目標に到達する値を探す。
 
         範囲全体を走査して目標を跨ぐ区間をすべて拾い、現在値から最も近い解を返す。
+
+        wide=False : 実績の操業範囲内だけを探す（既定。ここで見つかれば最も確か）
+        wide=True  : 設備仕様の範囲まで広げて探す。実績外の解も返すが範囲外として扱う
         """
-        bounds = self.checker.bounds(line, code, lever.driver)
+        bounds = (self.checker.ui_bounds(line, lever.driver) if wide
+                  else self.checker.bounds(line, code, lever.driver))
         if not bounds:
             return None
         low, high = bounds
@@ -172,7 +221,9 @@ class MachineDesignService:
         if lever.key == "nozzle_pressure":
             self._sync_flow(candidate, line)
         result = self._evaluate(candidate)
-        if result["range_status"] == OUT_OF_DISTRIBUTION:
+        # 実績範囲内での探索では、範囲外に出る解は採用しない。
+        # 広域探索では範囲外も返すが、範囲外である旨を必ず添える。
+        if result["range_status"] == OUT_OF_DISTRIBUTION and not wide:
             return None
         return {
             "lever": lever.key,
@@ -184,15 +235,19 @@ class MachineDesignService:
             "condition": candidate,
             "result": result,
             "error_gm2": round(result["CH_sum_pred_g_m2"] - target, 2),
+            "out_of_range": result["range_status"] == OUT_OF_DISTRIBUTION,
+            "extrapolated": bool(result.get("extrapolated_features")),
         }
 
     def _best_effort_lever(self, base: dict[str, Any], lever: Lever, target: float,
-                           line: str, code: str) -> dict[str, Any] | None:
+                           line: str, code: str, wide: bool = False) -> dict[str, Any] | None:
         """目標をちょうど跨げないとき、いちばん近づける値を返す。
 
         「届きません」で終わらせず、あと一歩の条件を示すために使う。
+        wide=True では設備仕様の範囲まで広げて探す。
         """
-        bounds = self.checker.bounds(line, code, lever.driver)
+        bounds = (self.checker.ui_bounds(line, lever.driver) if wide
+                  else self.checker.bounds(line, code, lever.driver))
         if not bounds:
             return None
         low, high = bounds
@@ -213,7 +268,7 @@ class MachineDesignService:
             return None
         error, value, candidate = best
         result = self._evaluate(candidate)
-        if result["range_status"] == OUT_OF_DISTRIBUTION:
+        if result["range_status"] == OUT_OF_DISTRIBUTION and not wide:
             return None
         return {
             "lever": lever.key, "label": lever.label, "unit": lever.unit,
@@ -222,6 +277,8 @@ class MachineDesignService:
             "condition": candidate, "result": result,
             "error_gm2": round(result["CH_sum_pred_g_m2"] - target, 2),
             "approximate": True,
+            "out_of_range": result["range_status"] == OUT_OF_DISTRIBUTION,
+            "extrapolated": bool(result.get("extrapolated_features")),
         }
 
     def achievable_range(self, base: dict[str, Any], line: str, code: str) -> dict[str, float]:
@@ -266,15 +323,45 @@ class MachineDesignService:
                 "予測値も操業範囲も信頼度が低いため、参考程度に扱ってください。"
             )
 
-        if abs(current_ch - target_ch_gm2) <= SOLVE_TOLERANCE_GM2:
+        # モデル自身の平均誤差より小さい差を埋めようとしても意味がない。
+        # 無理に条件を動かすと、実績外の極端な操作を推奨してしまうため、
+        # 「モデルの分解能の範囲内」として変更なしで返す。
+        mae = float(ERROR_REFERENCE.get(line, {}).get("CH_MAE", SOLVE_TOLERANCE_GM2))
+        tolerance = max(SOLVE_TOLERANCE_GM2, mae)
+        difference = abs(current_ch - target_ch_gm2)
+        payload["model_mae_gm2"] = round(mae, 2)
+        if difference <= tolerance:
             payload["status"] = "ok"
-            payload["message"] = (
-                f"いまの条件のままで目標 {target_ch_gm2:.1f} g/m² に届いています"
-                f"（予測 {current_ch:.1f} g/m²・両面合計）。"
-            )
+            if difference <= SOLVE_TOLERANCE_GM2:
+                payload["message"] = (
+                    f"いまの条件のままで目標 {target_ch_gm2:.1f} g/m² に届いています"
+                    f"（予測 {current_ch:.1f} g/m²・両面合計）。"
+                )
+            else:
+                payload["message"] = (
+                    f"予測 {current_ch:.1f} g/m² と目標 {target_ch_gm2:.1f} g/m² の差は "
+                    f"{difference:.1f} g/m² で、このモデルの平均誤差 {mae:.1f} g/m² の範囲内です。"
+                    "条件を変える必要はありません（これ以上の追い込みはモデルの分解能を超えます）。"
+                )
             return payload
 
+        # 第1段: 実績の操業範囲内で、効き目の大きい順に1項目ずつ試す。
+        # 実績からめっき付着量への効果を特定できない項目は、そもそも提案に使わない。
+        usable: list[Lever] = []
         for lever in LEVERS:
+            effect = self.lever_effect(line, lever)
+            if effect < MIN_LEVER_EFFECT_GM2:
+                payload["proposals"].append({
+                    "lever": lever.key, "label": lever.label, "found": False,
+                    "unusable": True,
+                    "reason": (
+                        f"{line}の実績では{lever.label}がほとんど動いておらず、"
+                        f"めっき付着量への効果を特定できません（実績全幅で {effect:.1f} g/m² 相当）。"
+                        "このため変更提案には使いません。"
+                    ),
+                })
+                continue
+            usable.append(lever)
             found = self._solve_lever(base, lever, target_ch_gm2, line, code)
             if found is None:
                 payload["proposals"].append({
@@ -294,9 +381,36 @@ class MachineDesignService:
             )
             return payload
 
+        # 第2段: 設備仕様の範囲まで広げて探す。実績外なので必ず警告を添える。
+        for lever in usable:
+            found = self._solve_lever(base, lever, target_ch_gm2, line, code, wide=True)
+            if found is None:
+                continue
+            found["found"] = True
+            payload["proposals"].append(found)
+            payload["status"] = "out_of_range"
+            direction = "上げて" if found["delta"] > 0 else "下げて"
+            payload["message"] = (
+                f"実績の操業範囲内では届かないため、範囲を広げて求めました。"
+                f"{lever.label}を {found['current']}{lever.unit} から "
+                f"{found['suggested']}{lever.unit} へ{direction}ください"
+                f"（{found['delta']:+.{lever.digits}f}{lever.unit}）。"
+                f"予測 {found['result']['CH_sum_pred_g_m2']:.1f} g/m²（両面合計）。"
+                "実績にない領域のため、境界の傾きを延長した参考値です。"
+            )
+            return payload
+
         # どのレバーでもちょうど到達できないとき、いちばん近づく案を出す。
-        attempts = [self._best_effort_lever(base, lever, target_ch_gm2, line, code) for lever in LEVERS]
+        # まず実績範囲内で探し、まだ遠いときは設備仕様の範囲まで広げて探し直して、
+        # 目標に近いほうを採用する。
+        attempts = [self._best_effort_lever(base, lever, target_ch_gm2, line, code)
+                    for lever in usable]
         attempts = [a for a in attempts if a is not None]
+        closest = min((abs(a["error_gm2"]) for a in attempts), default=None)
+        if closest is None or closest > SOLVE_TOLERANCE_GM2:
+            wider = [self._best_effort_lever(base, lever, target_ch_gm2, line, code, wide=True)
+                     for lever in usable]
+            attempts += [a for a in wider if a is not None]
         current_error = abs(current_ch - target_ch_gm2)
         if attempts:
             best = min(attempts, key=lambda a: abs(a["error_gm2"]))
@@ -365,7 +479,9 @@ class MachineDesignService:
             raise ValueError(f"未知のレバー: {lever_key}")
         line = str(condition.get("line", "")).strip()
         code = str(condition.get("coating_code", "")).strip()
-        bounds = self.checker.bounds(line, code, lever.driver)
+        # スライダーで選べる範囲と同じ幅で描く（画面と食い違わないように）
+        bounds = self.checker.ui_bounds(line, lever.driver) or \
+            self.checker.bounds(line, code, lever.driver)
         if not bounds:
             return {"x": [], "y": []}
         low, high = bounds

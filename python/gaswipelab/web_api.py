@@ -34,7 +34,7 @@ from gaswipelab.services.design_service import (
 )
 from gaswipelab.hmi import diagnostics as hmi_diagnostics
 from gaswipelab.hmi import screen as hmi_screen_module
-from gaswipelab.ml.ood import RangeChecker
+from gaswipelab.ml.ood import TARGET_RANGE_GM2, RangeChecker
 from gaswipelab.ml.predictor import ERROR_REFERENCE, GasWipingPredictor, OutOfScopeError
 from gaswipelab.services.machine_design_service import (
     FIXED_NOTE,
@@ -52,6 +52,10 @@ from gaswipelab.services.settings_service import (
 _analysis = AnalysisService()
 _calibration = CalibrationService(_analysis)
 _design = DesignService(_analysis)
+
+#: 画面の選択肢から外すめっき付着量記号。
+#: 305 は予測自体を拒否する（ウォーマーコイル）。122 は運用対象外のため一覧から隠す。
+HIDDEN_COATING_CODES = frozenset({"305", "122"})
 
 # --- 実機モデル（v4.0）。モデルJSONが重いので初回アクセス時に読み込む ---
 _MODEL_DIRS = ("/models", "models", "deliverables/GasWipeLab_WebApp/models")
@@ -247,6 +251,7 @@ def ml_bootstrap() -> str:
     try:
         service = _machine()
         reference = _machine_state["reference"]
+        checker = _machine_state["checker"]
         lines = {}
         for line, info in reference["lines"].items():
             lines[line] = {
@@ -254,13 +259,16 @@ def ml_bootstrap() -> str:
                 "features": info["features"],
                 "categories": info["categories"],
                 "flow": info["flow"],
+                "ui_ranges": checker.ui_ranges(line),
                 "codes": {
                     code: {"stats": entry["stats"]}
                     for code, entry in info["codes"].items()
+                    if code not in HIDDEN_COATING_CODES
                 },
             }
         return _ok({
             "model_version": service.predictor.model_version,
+            "target_range_gm2": list(TARGET_RANGE_GM2),
             "lines": lines,
             "levers": [{"key": x.key, "label": x.label, "unit": x.unit, "driver": x.driver} for x in LEVERS],
             "error_reference": ERROR_REFERENCE,
