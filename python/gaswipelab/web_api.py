@@ -260,6 +260,8 @@ def ml_bootstrap() -> str:
                 "categories": info["categories"],
                 "flow": info["flow"],
                 "ui_ranges": checker.ui_ranges(line),
+                # 実データから求めた偏効果。画面で「何がどれだけ効くか」を示すのに使う。
+                "trends": checker.trends(line),
                 "codes": {
                     code: {"stats": entry["stats"]}
                     for code, entry in info["codes"].items()

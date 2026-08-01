@@ -124,6 +124,14 @@ nav.bottom{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + env
   -moz-appearance:textfield;appearance:textfield}
 .srow .top .val:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(11,102,183,.14)}
 .srow .top .unit{font-size:11.5px;font-weight:600;color:var(--muted);min-width:2.2em}
+.srow .numgrp{display:flex;align-items:stretch;flex:none}
+.srow .numgrp .spin{width:34px;flex:none;border:1px solid #D6E0EA;background:#F6F9FC;
+  font-size:19px;font-weight:800;color:var(--brand);line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.srow .numgrp .spin:first-child{border-radius:9px 0 0 9px}
+.srow .numgrp .spin:last-child{border-radius:0 9px 9px 0;border-left:none}
+.srow .numgrp .val{width:4.6em;border-radius:0;border-right:none}
+.srow .numgrp .spin:active{background:var(--brand);color:#fff;border-color:var(--brand)}
 .srow .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:3px}
 .srow .ends{display:flex;justify-content:space-between;font-size:10.5px;color:#94A3B8;margin-top:-4px}
 .srow.out .top .val{color:var(--warn);border-color:var(--warn)}
@@ -256,6 +264,62 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chip{border:1px solid #CBD5E1;background:#fff;border-radius:999px;padding:5px 12px;font-size:12.5px;color:#475569;cursor:pointer;font-weight:600}
 .chip:hover{border-color:var(--brand);color:var(--brand)}
+.chip.reset{border-style:dashed;color:#94A3B8}
+
+/* ---------- 条件比較タブ ---------- */
+.usecase{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+@media(min-width:600px){.usecase{grid-template-columns:1fr 1fr}}
+.usecase>div{background:var(--brand-soft);border-radius:10px;padding:9px 11px}
+.usecase b{display:block;font-size:12.5px;color:var(--brand)}
+.usecase span{display:block;font-size:11.5px;color:#4B6A88;line-height:1.55;margin-top:2px}
+.cmpbase{background:#F8FAFC;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px}
+.cmpbase .t{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.cmpbase .r{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0;color:#64748B}
+.cmpbase .r b{color:#334155;font-variant-numeric:tabular-nums}
+.cmpbase .r.on{color:var(--brand)}
+.cmpbase .r.on b{color:var(--brand);font-weight:800}
+.cmpbase .none{font-size:11.5px;color:#94A3B8;margin-top:6px}
+.cmpresult{background:#0F2C47;color:#fff;border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.cmpresult .h{font-size:12.5px;color:#9FC2E0}
+.cmpresult .big{font-size:38px;font-weight:800;line-height:1.1;margin:2px 0 4px;font-variant-numeric:tabular-nums}
+.cmpresult.up .big{color:#FFC98A}
+.cmpresult.down .big{color:#8FE3B6}
+.cmpresult .big small{font-size:13px;font-weight:600;color:#9FC2E0;margin-left:7px}
+.cmpresult .s{font-size:13px;color:#DCE9F5;font-variant-numeric:tabular-nums}
+.cmpresult .j{margin-top:10px;font-size:12px;line-height:1.6;border-radius:8px;padding:8px 10px}
+.cmpresult .j.ok{background:rgba(143,227,182,.14);color:#B7EFD0}
+.cmpresult .j.weak{background:rgba(255,201,138,.14);color:#FFDDB4}
+#mlcompare-out.calc{opacity:.45;transition:opacity .12s}
+table.cmp2 .rownote td{font-size:11px;color:var(--muted);line-height:1.55;background:#F8FAFC;padding-top:4px;padding-bottom:6px}
+
+/* ---------- 使い方タブ：知見・計算のしくみ ---------- */
+h3.sect{font-size:13.5px;font-weight:800;color:var(--brand);margin:18px 0 2px;
+  padding-top:14px;border-top:1px solid var(--line)}
+details.kb{border:1px solid var(--line);border-radius:10px;margin-top:6px;background:#fff}
+details.kb>summary{cursor:pointer;font-size:13px;font-weight:700;color:#334155;padding:10px 12px;list-style:none}
+details.kb>summary::-webkit-details-marker{display:none}
+details.kb>summary::before{content:'＋';color:var(--brand);font-weight:800;margin-right:7px}
+details.kb[open]>summary::before{content:'−'}
+details.kb[open]>summary{border-bottom:1px solid var(--line);color:var(--brand)}
+details.kb>div{padding:8px 12px 10px}
+details.kb ul{margin:0;padding-left:18px}
+details.kb li{font-size:12.5px;color:#475569;line-height:1.75;margin-bottom:5px}
+details.kb code,.card code{background:#F1F5F9;border-radius:4px;padding:1px 5px;font-size:11.5px;color:#334155}
+.srcs{margin-top:12px;font-size:11px;color:var(--muted);line-height:1.8;
+  background:#F8FAFC;border-radius:8px;padding:8px 10px}
+.srcs a{color:var(--brand-2);text-decoration:none;border-bottom:1px dotted var(--brand-2)}
+.mechhead{font-size:13.5px;font-weight:800;color:#fff;border-radius:9px;padding:8px 12px;margin:16px 0 6px}
+.mechhead.ml{background:var(--brand)}
+.mechhead.phys{background:#4A5568}
+.efftab{margin-top:8px}
+.efftab .r{display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:1px solid #F1F5F9;font-size:12.5px}
+.efftab .r:last-child{border-bottom:none}
+.efftab .n{flex:1;min-width:0;color:#334155}
+.efftab .bar{width:84px;flex:none;height:8px;border-radius:4px;background:#EEF2F7;overflow:hidden}
+.efftab .bar i{display:block;height:100%;border-radius:4px;background:var(--brand-2)}
+.efftab .v{width:5.6em;flex:none;text-align:right;font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums}
+.efftab .r.weak .n,.efftab .r.weak .v{color:#94A3B8}
+.efftab .r.weak .bar i{background:#CBD5E1}
 
 /* ---------- buttons ---------- */
 .btn{display:block;width:100%;border:none;border-radius:12px;padding:15px 18px;font-size:15.5px;font-weight:700;cursor:pointer;text-align:center}
@@ -491,6 +555,133 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
     <div class="kv"><span><b>いちばん効くのはYノズル位置</b></span><b style="text-align:right">実機では圧力はほぼ固定運用です。<br>そのため位置→速度→圧力の順で変更を提案します</b></div>
     <div class="kv"><span><b>吹込流量は圧力に連動</b></span><b style="text-align:right">実績で圧力と流量は強く連動しています。<br>圧力を変えた提案では流量も自動で追従させています</b></div>
     <div class="kv"><span><b>板幅・板厚・記号は変更提案しない</b></span><b style="text-align:right">製品仕様・設備仕様のため、<br>これらを変える提案は出しません</b></div>
+
+    <h3 class="sect">実績データで、何がどれだけ効いていたか</h3>
+    <p class="sub">付着量記号の違いを打ち消したうえで、条件ごとの効き目を実績から求めた値です。
+      いま選んでいるラインの数字を出しています。</p>
+    <div id="ml-effect-table"></div>
+
+    <h3 class="sect">ワイピングの一般知見（公開文献・特許より）</h3>
+    <p class="sub">このアプリの実績データではなく、社外に公開されている研究・特許で共通して
+      報告されている内容です。条件を大きく動かす前の判断材料にしてください。</p>
+
+    <details class="kb"><summary>ノズル圧力を上げすぎると</summary><div>
+      <ul>
+        <li><b>スプラッシュ（飛散）</b>が出ます。ワイピング点のすぐ上流で液膜が不安定になり、
+          液滴が飛び散る現象で、<b>薄目付の実質的な限界</b>を決めているのはこれです。
+          飛んだ亜鉛は酸化して<b>ドロス</b>になり、再付着すると粒状の欠陥になります。</li>
+        <li>発生限界はウェーバー数 <code>We = ρ<sub>g</sub>U²δ/σ</code> で整理され、
+          <b>ガス速度の2乗</b>で効きます。圧力を上げるほど急に危険側へ入ります。</li>
+        <li>鋼帯の<b>ばたつき（フラッター）</b>を誘発し、付着量のムラや条痕の原因になります。</li>
+        <li>ガス消費量と<b>騒音</b>が増えます。エアナイフ騒音は圧力とともに増大します。</li>
+      </ul></div></details>
+
+    <details class="kb"><summary>ノズル圧力を下げすぎると</summary><div>
+      <ul>
+        <li>ワイピング力が足りず<b>付着量が過大</b>になります。亜鉛の使いすぎで歩留りが落ちます。</li>
+        <li>膜が厚いまま持ち上がるため、凝固までに<b>たれ・波（リップル）</b>が残りやすくなります。</li>
+        <li>幅方向の圧力分布が相対的に弱くなり、<b>幅方向のばらつき</b>が出やすくなります。</li>
+      </ul></div></details>
+
+    <details class="kb"><summary>ノズルを鋼板から離しすぎると</summary><div>
+      <ul>
+        <li>噴流が広がって<b>最大衝突圧力と圧力勾配が落ちます</b>。遠方場ではおおむね距離に反比例して
+          弱まるため、同じ付着量を出すのに<b>より高い圧力</b>が必要になります。</li>
+        <li>圧力分布の山がなだらかになってワイピング点がぼやけ、<b>付着量の制御性が落ちます</b>。</li>
+        <li>幅方向で噴流が板端へ回り込みやすくなり、<b>エッジオーバーコート</b>が出やすくなります。</li>
+      </ul></div></details>
+
+    <details class="kb"><summary>ノズルを鋼板に近づけすぎると</summary><div>
+      <ul>
+        <li>局所のせん断が強くなり<b>スプラッシュが起きやすく</b>なります。飛んだ亜鉛がノズルリップに
+          付くと<b>スリット詰まり</b>となり、その筋だけ付着量が増えて<b>縦筋状のムラ</b>になります。</li>
+        <li>鋼帯のばたつきに対して<b>接触・ノズル損傷のリスク</b>が上がります。</li>
+        <li>板端で表裏の噴流どうしが衝突して流れが乱れ、<b>エッジオーバーコート</b>や
+          端部のスプラッシュを招きます。</li>
+      </ul></div></details>
+
+    <details class="kb"><summary>エッジオーバーコート（端部の厚づき）</summary><div>
+      <ul>
+        <li>板端では衝突圧力が下がり、さらに表裏のジェットが互いにぶつかって流れが乱れるため、
+          <b>端部だけ付着量が増えます</b>。</li>
+        <li>対策には端部に置く<b>バッフルプレート（邪魔板）</b>が広く使われます。
+          厚さ2 mm程度が有効という報告があります。</li>
+        <li>邪魔板の代わりに、ノズル下リップに沿って小径の円柱を置き、噴流をわずかに下向きへ
+          偏向させる方式のほうが有効という解析結果もあります。</li>
+      </ul></div></details>
+
+    <details class="kb"><summary>速度・スリット・ガス種について</summary><div>
+      <ul>
+        <li><b>通板速度</b>…速いほど鋼帯が持ち上げる液膜が厚くなり、付着量は<b>増える</b>方向です。
+          薄目付ほど低速・高圧が必要になります。</li>
+        <li><b>スリット開度</b>…ある距離に対して薄目付に有利な<b>最適開度</b>が存在します。
+          広げれば流量は増えますが、それだけで薄くなるわけではありません。</li>
+        <li><b>噴流角度</b>…わずかに下向き（例：5°）にするとスプラッシュの発生が遅れるという
+          報告があります。</li>
+        <li><b>3スリットノズル</b>…主スリットの上下に補助スリットを設けて衝突圧力分布を整え、
+          薄目付とスプラッシュ抑制を両立させる方式が実用化されています。</li>
+        <li><b>ガス種</b>…窒素は亜鉛の酸化やドロス生成を抑えられますが、密度が空気とほぼ同じなので
+          ワイピング力そのものは大きく変わりません。</li>
+      </ul></div></details>
+
+    <div class="srcs">
+      主な出典：
+      <a href="https://www.jstage.jst.go.jp/article/tetsutohagane/109/9/109_TETSU-2023-014/_html/-char/ja" target="_blank" rel="noopener">鉄と鋼 109(9) 2023 ワイピングプロセスにおける薄膜化技術</a>／
+      <a href="https://www.jstage.jst.go.jp/article/isijinternational/64/11/64_ISIJINT-2024-119/_article" target="_blank" rel="noopener">ISIJ Int. 64(11) 2024 Coating Weight Reduction Technology in Gas Wiping</a>／
+      <a href="https://www.jstage.jst.go.jp/article/tetsutohagane/102/10/102_TETSU-2016-014/_html/-char/ja" target="_blank" rel="noopener">鉄と鋼 102(10) 2016 3スリットノズルの噴流形態</a>／
+      <a href="https://www.jstage.jst.go.jp/article/isijinternational/46/4/46_4_573/_article" target="_blank" rel="noopener">ISIJ Int. 46(4) 2006 Edge Overcoating を防ぐガスワイピング</a>／
+      <a href="https://www.jstage.jst.go.jp/article/isijinternational/59/2/59_ISIJINT-2018-413/_article" target="_blank" rel="noopener">ISIJ Int. 59(2) 2019 ワイピング圧力・せん断位置の変動と膜プロファイル</a>／
+      <a href="https://patents.google.com/patent/US9951407B2/en" target="_blank" rel="noopener">US 9,951,407 B2 ワイピングノズルおよび位置制御装置</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>計算のしくみ（何を根拠に出しているか）</h2>
+    <p class="sub">2つのモードは<b>まったく別の原理</b>で答えを出しています。
+      結果をどこまで信じてよいかは、この違いを知っているかで変わります。</p>
+
+    <div class="mechhead ml">実機モード ─ 過去実績から学んだ統計モデル</div>
+    <div class="kv"><span>種類</span><b style="text-align:right">勾配ブースティング決定木（CatBoost）<br><b>物理式は一切使いません</b></b></div>
+    <div class="kv"><span>学習データ</span><b style="text-align:right">実機6か月・14,390件<br>（GI 7,076 / GL 7,314・製品1本につき代表値1点）</b></div>
+    <div class="kv"><span>入力</span><b style="text-align:right">数値18項目＋区分9項目<br>（付着量記号・スパングル・化成処理・材質・規格など）</b></div>
+    <div class="kv"><span>出力の作り方</span><b style="text-align:right">表面平均CFと裏面平均CGを<b>別々のモデル</b>で予測し、<br>両面合計 CH = CF ＋ CG とします</b></div>
+    <div class="kv"><span>GIとGLの違い</span><b style="text-align:right">GIは直接予測。GLは<b>付着量記号ごとの実績中央値を土台</b>にして、<br>そこからのズレ（残差）だけをモデルが予測します</b></div>
+    <div class="kv"><span>条件の逆算</span><b style="text-align:right">式を解くのではなく、可動範囲を41点で走査して<br>目標と交わる点を拾い、その周りを24回二分して詰めます<br>（GLは応答が単調でないため）</b></div>
+    <div class="kv"><span>実績範囲の外</span><b style="text-align:right">境界での傾きを直線で延長（案分）します。<br>実データの効きと向きが合わないときは延長しません</b></div>
+    <div class="kv"><span>精度</span><b style="text-align:right">両面合計の平均絶対誤差 <b>GI 6.62 / GL 2.54 g/m²</b></b></div>
+    <div class="note plain" style="margin-top:8px">
+      <b>この方式の限界。</b>過去にあった条件の組合せの「間を埋める」ことしかできません。
+      圧力・流量・Yノズル位置は実機でたがいに連動して動かされてきたため、
+      1つだけ動かした結果は<b>因果効果ではありません</b>。実績にない領域は当たりません。
+    </div>
+
+    <div class="mechhead phys">理論モード ─ 液膜の力学と噴流の相関式</div>
+    <div class="kv"><span>種類</span><b style="text-align:right">1次元の薄膜方程式＋衝突噴流の実験相関<br><b>実績データは一切使いません</b></b></div>
+    <div class="kv"><span>計算の順序</span><b style="text-align:right">プレナム圧 → ノズル出口速度（等エントロピー膨張・チョーク判定）<br>→ 鋼板面の圧力分布 p(x) とせん断応力 τ(x)<br>→ 液膜の流束式 → 膜厚 → 密度を掛けて付着量</b></div>
+    <div class="kv"><span>中心の式</span><b style="text-align:right"><code>Q(H) = H + S H²/2 − G H³/3</code><br>膜厚 <code>H* = [S + √(S²+4G)] / 2G</code><br>実際の流束は最小の断面で決まる <code>Q<sub>w</sub> = min<sub>x</sub> Q<sub>max</sub>(x)</code></b></div>
+    <div class="kv"><span>記号の意味</span><b style="text-align:right"><code>S</code>＝噴流のせん断、<code>G</code>＝重力＋圧力勾配<br>噴流が無い極限では自由引き上げ <code>h=(2/3)√(μV/ρg)</code> に一致します</b></div>
+    <div class="kv"><span>圧力・せん断の分布</span><b style="text-align:right">近い距離（Z/d≦7）は Elsaadawy ら(2007)の相関、<br>遠い距離（Z/d≧9）は Ellen &amp; Tu 系、<br>その間はなめらかにつなぎます</b></div>
+    <div class="kv"><span>スプラッシュ判定</span><b style="text-align:right">ウェーバー数と発生限界の比 We/We*<br>（Gosset &amp; Buchlin 2007 / Myrillas ら 2011）</b></div>
+    <div class="kv"><span>亜鉛の物性</span><b style="text-align:right">粘度・密度・表面張力を浴温の関数として計算します</b></div>
+    <div class="kv"><span>実績校正</span><b style="text-align:right">実測CSVを読ませると、自ライン用の補正係数を掛けます<br>（「実績校正」タブ）</b></div>
+    <div class="note plain" style="margin-top:8px">
+      <b>この方式の限界。</b>1次元・定常の理想化で、幅方向の端部効果（エッジオーバーコート）、
+      ノズル固有の形状、板のばたつき、汚れによるスリット詰まりは入っていません。
+      <b>GL（ガルバリウム）は浴温約600℃で、前提としている溶融亜鉛（420〜500℃）の物性域から
+      外れるため適用できません。</b>
+    </div>
+    <div class="srcs">
+      理論の系譜：Thornton &amp; Graff (1976) → Tuck (1983) → Ellen &amp; Tu (1984) →
+      Elsaadawy et al., Metall. Mater. Trans. B 38 (2007) 413 ／
+      Beltaos &amp; Rajaratnam (1973) ／ Gosset &amp; Buchlin, J. Fluids Eng. 129 (2007)
+    </div>
+
+    <div class="note info">
+      <b>使い分け。</b>実機GI/GLの条件を決めるときは<b>実機モード</b>。
+      実績に無い条件（ガス種・ノズルすき間の変更、実績範囲の外）を検討したいときだけ<b>理論モード</b>。
+      理論モードの「条件設計」タブには実機モードの条件を取り込むボタンがあり、
+      2つの答えを並べて確かめられます。
+    </div>
   </div>
 
   <div class="card">
@@ -611,18 +802,31 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 ================================================================= -->
 <div id="tab-mlcompare" class="tab-content">
   <div class="card">
-    <h2>変更前と変更後をくらべる</h2>
+    <h2>この画面は「もし〜したら」を試す場所です</h2>
     <p class="sub">
-      基準は「条件設計」で入力した条件です。下の項目を変えると、予測付着量がどれだけ動くかを表示します。
+      「条件設計」でいま入っている条件を <b>基準</b> とし、そこから条件を変えたときに
+      <b>めっき付着量がどちらへ何 g/m² 動くか</b> を見ます。目標から条件を逆算する画面ではありません。
     </p>
+    <div class="usecase">
+      <div><b>生産量を増やしたい</b><span>通板速度を上げると付着量はどれだけ増えるか</span></div>
+      <div><b>ガス使用量を減らしたい</b><span>ノズル圧力を下げると付着量はどれだけ増えるか</span></div>
+      <div><b>設備を動かす前に</b><span>Yノズル位置を1 mm動かす影響を先に確かめる</span></div>
+      <div><b>実行値とのズレ</b><span>提案どおりに設定できないとき、その差がどう効くか</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-tag">1</span>変更後の条件をつくる</h2>
+    <p class="sub">
+      よくある変更はボタンひと押しで入ります。押すたびに基準から積み上がります。
+      ノズル圧力・通板速度を変えたときは、実績の関係にそって <b>ノズル吹込流量も自動で追従</b> させます。
+    </p>
+    <div class="chips" id="mlcompare-presets"></div>
+    <div class="cmpbase" id="mlcompare-base"></div>
     <div id="mlcompare-fields"></div>
-    <button class="btn btn-primary" style="margin-top:12px" onclick="runMlCompare()">比較する</button>
   </div>
+
   <div id="mlcompare-out"></div>
-  <div class="note warn" id="mlcompare-note">
-    圧力・流量・Yノズル位置は実績上たがいに連動して動かされています。1項目だけを大きく動かした結果は、
-    実績にない組合せになるため信頼度が下がります。
-  </div>
 </div>
 
 <!-- ================================================================
@@ -651,6 +855,13 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   <div class="card">
     <h2><span class="step-tag">1</span>いま変えられない条件</h2>
     <p class="sub">設備・製品側で決まっている条件を入力します。これを固定したまま、目標めっき付着量を出すための <b>噴射圧力</b> と <b>ノズル距離</b> を計算します。</p>
+    <button class="btn btn-sub" id="import-ml-btn" onclick="importFromMl()">
+      実機モードの条件を取り込む
+    </button>
+    <div class="note plain" id="import-ml-note" style="margin-top:8px">
+      実機モードで選んでいる <b>通板速度・板幅・ポット温度・目標付着量</b> をこの画面へ写します。
+      ノズルすき間とガス種は設備仕様なのでそのままです。
+    </div>
     <div id="fixed-fields"></div>
   </div>
 
@@ -667,6 +878,15 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   </button>
 
   <div id="design-out" style="margin-top:12px"></div>
+
+  <div class="card" id="mode-compare-card">
+    <h2>実機モードとくらべる</h2>
+    <p class="sub">
+      同じ操業条件について、<b>実績から学んだモデル</b>と<b>物理式</b>が何を答えたかを並べます。
+      2つが近ければ、その条件は物理的にも実績的にも無理がないと判断できます。
+    </p>
+    <div id="mode-compare-out"></div>
+  </div>
 
   <div class="disclaimer">本ツールの結果は実機保証値ではありません。事前設定・条件検討の目安として使用してください。</div>
 </div>
@@ -1079,8 +1299,10 @@ function switchTab(name){
   if (ML_TABS.includes(name)) mlState.tab = name;
   saveState();
   if (name==='check' && checkDirty) runCheck(false);
-  if (name==='mlhmi'){ resizeMlPlots(); runMlPredict(); }
-  if (name==='mlcompare') buildMlCompareFields();
+  if (name==='mlhmi') runMlPredict();
+  if (name==='mlcompare') buildMlCompare();
+  // 隠れている間に画面幅が変わっていることがあるので、開いた時点で必ず追従させる
+  resizeAllPlots();
 }
 
 /* ==================================================================
@@ -1105,10 +1327,10 @@ const ML_FIELDS = {
   '裏ノズル圧力_kPa':        {label:'ノズル圧力（裏）', unit:'kPa', hint:'', dec:2, group:'main'},
   '中央速度_m_min':          {label:'通板速度', unit:'m/min', hint:'ラインスピード', dec:1, group:'main'},
   'ノズル吹込流量_Nm3H':      {label:'ノズル吹込流量', unit:'Nm³/h', hint:'表裏合計の実測流量（暫定定義）。圧力と連動する', dec:0, group:'main'},
-  '製品板厚_mm':             {label:'製品板厚', unit:'mm', hint:'', dec:2, group:'prod'},
-  '製品板幅_mm':             {label:'製品板幅', unit:'mm', hint:'', dec:0, group:'prod'},
+  '製品板厚_mm':             {label:'製品板厚', unit:'mm', hint:'', dec:2, group:'prod', spin:true},
+  '製品板幅_mm':             {label:'製品板幅', unit:'mm', hint:'', dec:0, group:'prod', spin:true},
   '2JC進入板温_IR_C':        {label:'2JC進入板温', unit:'℃', hint:'めっき浴に入る直前の板温（赤外線）', dec:0, group:'prod'},
-  '使用ポット温度_C':         {label:'ポット温度', unit:'℃', hint:'ラインで決まる', dec:0, group:'prod'},
+  '使用ポット温度_C':         {label:'ポット温度', unit:'℃', hint:'浴が熱いほど亜鉛の粘度が下がり、持ち上げる膜が薄くなる', dec:0, group:'prod'},
   'ポット張力_kN':           {label:'ポット張力', unit:'kN', hint:'', dec:2, group:'other'},
   'ノズル高さ平均_mm':        {label:'ノズル高さ', unit:'mm', hint:'浴面からノズルスリットまでの高さ', dec:1, group:'other'},
   'ノズル空気温度_C':         {label:'ノズル空気温度', unit:'℃', hint:'', dec:0, group:'other'},
@@ -1120,8 +1342,9 @@ const ML_FIELDS = {
 };
 /* 答えとして提示する条件（この順に並べる） */
 const ML_ANSWER_KEYS = ['表ノズル位置平均_mm','裏ノズル位置平均_mm','表ノズル圧力_kPa','裏ノズル圧力_kPa','ノズル吹込流量_Nm3H','中央速度_m_min'];
-/* 手順3「動かせない条件」に出す項目 */
-const ML_FIXED_KEYS = ['中央速度_m_min','製品板厚_mm','製品板幅_mm'];
+/* 手順3「動かせない条件」に出す項目。板厚・板幅は手順1で入れるのでここには出さない。
+   ポット温度と2JC進入板温は、実績で付着量への効きが確認できたのでここに置く。 */
+const ML_FIXED_KEYS = ['中央速度_m_min','使用ポット温度_C','2JC進入板温_IR_C'];
 const ML_CATS = {
   'V:スパングル':'スパングル', 'W:化成処理':'化成処理', 'X:カーボン量':'カーボン量',
   'Y:類別':'類別', 'Z:材質':'材質', 'AB:規格':'規格', 'AC:用途':'用途',
@@ -1162,27 +1385,33 @@ let _sliderSeq = 0;
 /* スライダー1本。バーでも右上の数値欄でも同じ値を動かせる。
    数値欄は上下矢印（ブラウザ標準）に加えて左右矢印でも1目盛ずつ増減する。 */
 function sliderRow(opt){
-  const {id, label, unit, hint, min, max, step, dec, value, oninput, onchange, dataKey} = opt;
+  const {id, label, unit, hint, min, max, step, dec, value, oninput, onchange, dataKey, spin} = opt;
   const v = (value===null || value===undefined || isNaN(value)) ? (min+max)/2 : Number(value);
   const outside = v < min - 1e-9 || v > max + 1e-9;
   // バーは刻みの上にしか止まれない。数値欄には同じ値を出す（両者が食い違って見えないように）。
   const snapped = Math.min(max, Math.max(min, min + Math.round((Math.min(max, Math.max(min, v)) - min) / step) * step));
   const clamped = Number(snapped.toFixed(6));
   const pct = max > min ? ((clamped - min) / (max - min) * 100) : 50;
+  // ±ボタン。指1本で1目盛ずつ確実に動かしたい項目（板厚・板幅）に付ける。
+  const btn = dir => `<button type="button" class="spin" tabindex="-1"
+      aria-label="${label}を1目盛${dir>0?'増やす':'減らす'}"
+      onclick="sliderNudge('${id}', ${dir}, ${dec})">${dir>0?'＋':'−'}</button>`;
   return `<div class="srow ${outside?'out':''}" id="srow-${id}">
     <div class="top">
       <b>${label}</b>
+      ${spin ? '<span class="numgrp">' + btn(-1) : ''}
       <input type="number" class="val" id="sval-${id}" value="${clamped.toFixed(dec)}"
              min="${min}" max="${max}" step="${step}" inputmode="${dec>0?'decimal':'numeric'}"
              aria-label="${label}"
              oninput="sliderTypeIn('${id}', this)"
              onkeydown="sliderKeyNudge(event, '${id}', ${dec})"
-             onblur="sliderReformat('${id}', ${dec})"><span class="unit">${unit}</span>
+             onblur="sliderReformat('${id}', ${dec})">${spin ? btn(1) + '</span>' : ''}<span class="unit">${unit}</span>
     </div>
     ${hint ? `<div class="hint">${hint}</div>` : ''}
     <input type="range" id="sinp-${id}" min="${min}" max="${max}" step="${step}" value="${clamped}"
            ${dataKey ? `data-key="${dataKey}" data-dec="${dec}"` : ''}
-           style="--pct:${pct}%" oninput="${oninput}" ${onchange ? `onchange="${onchange}"` : ''}>
+           style="--pct:${pct}%" oninput="${oninput}" ${onchange ? `onchange="${onchange}"` : ''}
+           onpointerdown="sliderReformat('${id}', ${dec})">
     <div class="ends"><span>${min.toFixed(dec)}</span><span>${max.toFixed(dec)}</span></div>
   </div>`;
 }
@@ -1221,19 +1450,24 @@ function sliderCommit(id, delay){
   }, delay === undefined ? 450 : delay);
 }
 
+/* 1目盛ずつ増減する。±ボタンと左右矢印の共通処理。 */
+function sliderNudge(id, dir, dec){
+  const range = $('sinp-'+id), el = $('sval-'+id);
+  if (!range) return;
+  const step = parseFloat(range.step) || 1;
+  const cur = el ? parseFloat(el.value) : NaN;
+  range.value = (isNaN(cur) ? parseFloat(range.value) : cur) + dir * step;
+  if (el) el.value = parseFloat(range.value).toFixed(dec);
+  range.dispatchEvent(new Event('input', {bubbles:true}));
+  sliderCommit(id, 250);
+}
+
 /* 数値欄で左右矢印を押したら1目盛ずつ増減する。 */
 function sliderKeyNudge(ev, id, dec){
   const dir = ev.key === 'ArrowRight' ? 1 : (ev.key === 'ArrowLeft' ? -1 : 0);
   if (!dir) return;
   ev.preventDefault();
-  const range = $('sinp-'+id), el = ev.currentTarget;
-  if (!range) return;
-  const step = parseFloat(range.step) || 1;
-  const cur = parseFloat(el.value);
-  range.value = (isNaN(cur) ? parseFloat(range.value) : cur) + dir * step;
-  el.value = parseFloat(range.value).toFixed(dec);
-  range.dispatchEvent(new Event('input', {bubbles:true}));
-  sliderCommit(id, 250);
+  sliderNudge(id, dir, dec);
 }
 
 /* 欄から離れたら、スライダーが実際に取った値へ表示をそろえる（範囲外・刻み外の入力の後始末）。 */
@@ -1265,12 +1499,33 @@ function mlSliderBounds(key){
   return {min: round(Math.floor(min/step)*step), max: round(Math.ceil(max/step)*step), step: round(step)};
 }
 
+/* 有効数字を保った短い表記。0.0024 のような小さい傾きが「0.00」に潰れないようにする。 */
+function fmtSig(x, digits){
+  if (x === null || x === undefined || isNaN(x)) return '—';
+  if (x === 0) return '0';
+  const d = Math.max(0, (digits||2) - 1 - Math.floor(Math.log10(Math.abs(x))));
+  return (x >= 0 ? '+' : '') + x.toFixed(Math.min(6, d));
+}
+
+/* 実績データから求めた「1単位動かすと付着量が何 g/m² 変わるか」。
+   付着量記号の違いを打ち消した（記号内で中心化した）多変量回帰の係数を使う。 */
+function mlEffectText(key){
+  const info = mlLineInfo();
+  const t = info && info.trends ? info.trends[key] : null;
+  if (!t) return '';
+  if (Math.abs(t.swing_gm2) < 0.5) return '実績では付着量への効果を特定できません';
+  return `実績の効き：1 ${ML_FIELDS[key].unit} 変えると ${fmtSig(t.beta_gm2_per_unit, 3)} g/m²`
+       + `（実績の振れ幅ぜんぶで ${fmt(t.swing_gm2, 1)} g/m²）`;
+}
+
 function mlNumRow(key, value, onchange, onrelease){
   const f = ML_FIELDS[key];
   const b = mlSliderBounds(key);
   const r = mlRange(key);
   if (!b) return '';
-  const hint = [f.hint, r ? `実績の中央値 ${fmt(r.median,f.dec)}（よく使う範囲 ${fmt(r.p10,f.dec)}〜${fmt(r.p90,f.dec)}）` : '']
+  const hint = [f.hint,
+                r ? `実績の中央値 ${fmt(r.median,f.dec)}（よく使う範囲 ${fmt(r.p10,f.dec)}〜${fmt(r.p90,f.dec)}）` : '',
+                mlEffectText(key)]
     .filter(Boolean).join('　/　');
   // 日本語は英数字以外なので、キーをそのままidにすると全部 '_' に潰れて衝突する。
   // 連番で必ず一意にする（同じ項目を複数箇所に出す場合も data-key 側で同期する）。
@@ -1279,9 +1534,44 @@ function mlNumRow(key, value, onchange, onrelease){
     id: sid, label: f.label, unit: f.unit, hint, dec: f.dec,
     min: b.min, max: b.max, step: b.step, value,
     dataKey: onchange==='setMlField' ? key : null,
+    spin: !!f.spin,
     oninput: `${onchange}('${key}', sliderPaint('${sid}', this, ${f.dec}))`,
     onchange: onrelease || null,
   });
+}
+
+/* 使い方タブの「何がどれだけ効いていたか」。実績から求めた効き目を大きい順に並べる。 */
+function buildMlEffectTable(){
+  const el = $('ml-effect-table');
+  const info = mlLineInfo();
+  if (!el) return;
+  if (!info || !info.trends){ el.innerHTML = ''; return; }
+  const rows = Object.keys(ML_FIELDS)
+    .filter(k => info.trends[k])
+    .map(k => ({key:k, label: ML_FIELDS[k].label, unit: ML_FIELDS[k].unit,
+                beta: info.trends[k].beta_gm2_per_unit, swing: Math.abs(info.trends[k].swing_gm2)}))
+    .sort((a,b) => b.swing - a.swing);
+  if (!rows.length){ el.innerHTML = ''; return; }
+  const top = rows[0].swing || 1;
+  el.innerHTML = `<div class="efftab">
+    <div class="r" style="border-bottom:1px solid var(--line)">
+      <span class="n" style="font-weight:700;color:var(--muted)">${esc(mlState.line)}：実績のばらつき全体で動く量</span>
+      <span class="v" style="color:var(--muted)">g/m²</span></div>` +
+    rows.map(r => {
+      const weak = r.swing < 0.5;
+      return `<div class="r ${weak?'weak':''}">
+        <span class="n">${esc(r.label)}<br>
+          <small style="color:#94A3B8">${weak ? '効果を特定できません'
+            : `1 ${esc(r.unit)} 変えると ${fmtSig(r.beta,3)} g/m²`}</small></span>
+        <span class="bar"><i style="width:${Math.max(2, r.swing/top*100)}%"></i></span>
+        <span class="v">${fmt(r.swing,1)}</span>
+      </div>`;
+    }).join('') + `</div>
+    <div class="note plain">
+      「実績のばらつき全体で動く量」は、その条件が実績で振れていた幅ぶん動かしたときの付着量の変化です。
+      <b>${esc(mlState.line)} の平均誤差 ${fmt((mlBoot.error_reference[mlState.line]||{}).CH_MAE, 1)} g/m² より小さい項目は、
+      動かしても差を判別できません。</b>変更提案に使うのは、効き目を実績から特定できる項目だけです。
+    </div>`;
 }
 
 /* 同じ項目のスライダーが複数の場所にあるとき（例: 通板速度）、まとめて追従させる。 */
@@ -1383,7 +1673,7 @@ async function loadMlDefaults(keepTarget){
   const info = mlLineInfo();
   if (info && info.codes[mlState.code]) info.codes[mlState.code].featureRanges = d.features;
   mlState.compare = Object.assign({}, d.condition);
-  buildMlSelect(); buildMlProduct(); buildMlFields(); buildMlTarget();
+  buildMlSelect(); buildMlProduct(); buildMlFields(); buildMlTarget(); buildMlEffectTable();
   saveState();
 }
 
@@ -1647,13 +1937,18 @@ function renderHmiScreen(d){
   $('hmi-diag').innerHTML = rows + ccNote;
 }
 
+let _mlPredictBusy = false;
 async function runMlPredict(){
-  if (!mlBoot || !mlState.cond.line) return;
+  // タブを速く切り替えると呼び出しが重なる。条件が入る前や二重起動では走らせない。
+  if (!mlBoot || !mlState.cond.line || _mlPredictBusy) return;
+  _mlPredictBusy = true;
   let data, curves;
   try {
-    data   = await busy('装置画面を組み立て中…', () => py('hmi_screen', {condition: mlState.cond}));
-    curves = await busy('応答カーブを計算中…',   () => py('ml_curves', mlState.cond));
+    const cond = Object.assign({}, mlState.cond);   // 実行中に差し替わっても影響しないよう複製する
+    data   = await busy('装置画面を組み立て中…', () => py('hmi_screen', {condition: cond}));
+    curves = await busy('応答カーブを計算中…',   () => py('ml_curves', cond));
   } catch(e){ return; }
+  finally { _mlPredictBusy = false; }
   renderHmiScreen(data);
   drawMlCurve('plot-ml-position', curves.curves.nozzle_position);
   drawMlCurve('plot-ml-speed',    curves.curves.line_speed);
@@ -1692,58 +1987,167 @@ function drawMlCurve(divId, c){
 }
 
 const ML_PLOT_IDS = ['plot-ml-position','plot-ml-speed','plot-ml-pressure'];
-function resizeMlPlots(){
-  ML_PLOT_IDS.forEach(id => {
-    const el = $(id);
-    if (el && el.querySelector('.main-svg')) { try { Plotly.Plots.resize(el); } catch(e){} }
-  });
+/* Plotlyは「描いたときの幅」を保持する。画面幅が変わっても自動では追従しないため、
+   明示的に描き直す。非表示のうちに直すと幅0で潰れるので、見えているものだけを対象にする
+   （隠れているタブのグラフは、そのタブを開いたときに直す）。 */
+function resizePlot(id){
+  const el = $(id);
+  if (el && el.offsetWidth && el.querySelector('.main-svg')) { try { Plotly.Plots.resize(el); } catch(e){} }
+}
+
+/* 理論モード側のグラフ一式。こちらも同じ理由で明示的に追従させる。 */
+const PHYS_PLOT_IDS = ['plot-p','plot-z','plot-v','plot-map',
+                       'plot-pressure','plot-shear','plot-film','plot-scatter','plot-hist'];
+function resizeAllPlots(){
+  ML_PLOT_IDS.concat(PHYS_PLOT_IDS).forEach(id => resizePlot(id));
 }
 
 /* ---------- 条件比較タブ ---------- */
-function buildMlCompareFields(){
+function buildMlCompare(){
   if (!mlBoot || !mlState.cond.line) return;
   const rows = Object.keys(ML_FIELDS)
     .filter(k => ML_FIELDS[k].group === 'main')
-    .map(k => mlNumRow(k, mlState.compare[k], 'setMlCompareField')).join('');
+    .map(k => mlNumRow(k, mlState.compare[k], 'setMlCompareField', 'runMlCompare(true)')).join('');
   $('mlcompare-fields').innerHTML = rows;
+  $('mlcompare-presets').innerHTML = MLCOMPARE_PRESETS.map((p, i) =>
+    `<button class="chip" onclick="mlComparePreset(${i})">${esc(p.label)}</button>`).join('') +
+    `<button class="chip reset" onclick="resetMlCompare()">基準に戻す</button>`;
+  renderMlCompareBase();
 }
+
+/* 押すたびに基準からの変更が積み上がる。実機で「ちょっと動かす」単位に合わせてある。 */
+const MLCOMPARE_PRESETS = [
+  {label:'通板速度 +10',      keys:['中央速度_m_min'], delta:+10},
+  {label:'通板速度 −10',      keys:['中央速度_m_min'], delta:-10},
+  {label:'ノズル圧力 +1',     keys:['表ノズル圧力_kPa','裏ノズル圧力_kPa'], delta:+1},
+  {label:'ノズル圧力 −1',     keys:['表ノズル圧力_kPa','裏ノズル圧力_kPa'], delta:-1},
+  {label:'Yノズル位置 +1',    keys:['表ノズル位置平均_mm','裏ノズル位置平均_mm'], delta:+1},
+  {label:'Yノズル位置 −1',    keys:['表ノズル位置平均_mm','裏ノズル位置平均_mm'], delta:-1},
+];
+
+/* 実績の圧力-流量関係。圧力・速度を変えたとき、流量だけ取り残されないようにする。 */
+function mlExpectedFlow(cond){
+  const info = mlLineInfo();
+  const f = info && info.flow;
+  const p = (Number(cond['表ノズル圧力_kPa']) + Number(cond['裏ノズル圧力_kPa'])) / 2;
+  const v = Number(cond['中央速度_m_min']);
+  if (!f || !(p > 0) || !(v > 0)) return null;
+  return Math.exp(f.intercept + f.ln_pressure * Math.log(p) + f.ln_speed * Math.log(v));
+}
+
+function mlComparePreset(index){
+  const p = MLCOMPARE_PRESETS[index];
+  if (!p) return;
+  p.keys.forEach(k => {
+    const b = mlSliderBounds(k);
+    let v = Number(mlState.compare[k]) + p.delta;
+    if (b) v = Math.min(b.max, Math.max(b.min, v));
+    mlState.compare[k] = Number(v.toFixed(4));
+  });
+  const flow = mlExpectedFlow(mlState.compare);
+  if (flow !== null) mlState.compare['ノズル吹込流量_Nm3H'] = Math.round(flow);
+  buildMlCompare();
+  runMlCompare(true);
+}
+
+function resetMlCompare(){
+  mlState.compare = Object.assign({}, mlState.cond);
+  buildMlCompare();
+  $('mlcompare-out').innerHTML = '';
+}
+
+/* 基準（条件設計タブの条件）を、変更後と並べて常に見えるようにしておく。 */
+function renderMlCompareBase(){
+  const el = $('mlcompare-base');
+  if (!el) return;
+  const keys = Object.keys(ML_FIELDS).filter(k => ML_FIELDS[k].group === 'main');
+  const changed = keys.filter(k => Math.abs(Number(mlState.cond[k]) - Number(mlState.compare[k])) > 1e-9);
+  el.innerHTML = `<div class="t">基準（条件設計タブの条件）</div>` +
+    keys.map(k => {
+      const f = ML_FIELDS[k], on = changed.indexOf(k) >= 0;
+      return `<div class="r ${on?'on':''}"><span>${f.label}</span>
+        <b>${fmt(mlState.cond[k], f.dec)}${on ? ` → ${fmt(mlState.compare[k], f.dec)}` : ''} ${f.unit}</b></div>`;
+    }).join('') +
+    (changed.length ? '' : `<div class="none">まだ何も変えていません。上のボタンか、下のバーで変えてください。</div>`);
+}
+
 function setMlCompareField(key, raw){
   const v = parseFloat(raw);
   mlState.compare[key] = isNaN(v) ? raw : v;
+  renderMlCompareBase();
 }
 
-async function runMlCompare(){
+let _mlCompareBusy = false, _mlCompareAgain = false;
+async function runMlCompare(auto){
+  if (_mlCompareBusy){ _mlCompareAgain = true; return; }
+  _mlCompareBusy = true;
+  try { await runMlCompareOnce(auto); }
+  finally {
+    _mlCompareBusy = false;
+    if (_mlCompareAgain){ _mlCompareAgain = false; runMlCompare(auto); }
+  }
+}
+
+async function runMlCompareOnce(auto){
+  const out = $('mlcompare-out');
   let data;
   try {
-    data = await busy('比較を計算中…',
-      () => py('ml_compare', {before: mlState.cond, after: mlState.compare}));
-  } catch(e){ return; }
-  const c = data.comparison;
+    if (auto){
+      out.classList.add('calc');
+      await new Promise(r => setTimeout(r, 16));
+      data = await py('ml_compare', {before: mlState.cond, after: mlState.compare});
+    } else {
+      data = await busy('比較を計算中…',
+        () => py('ml_compare', {before: mlState.cond, after: mlState.compare}));
+    }
+  } catch(e){ console.error(e); toast('計算に失敗しました'); return; }
+  finally { out.classList.remove('calc'); }
+  renderMlCompare(data.comparison);
+}
+
+function renderMlCompare(c){
   const sign = v => (v>=0?'+':'') + fmt(v,1);
-  let html = `<div class="card"><h3>予測の変化</h3>
-    <div class="sidebyside">
-      <div><div class="lab">変更前（両面合計）</div><div class="num">${fmt(c.before.CH_sum_pred_g_m2,1)}</div></div>
-      <div><div class="lab">変更後（両面合計）</div><div class="num">${fmt(c.after.CH_sum_pred_g_m2,1)}</div></div>
-      <div><div class="lab">差</div><div class="num">${sign(c.delta_ch_gm2)}</div></div>
-    </div>
-    <div class="kv" style="margin-top:10px"><span>表面平均 CF</span><b>${fmt(c.before.CF_pred_g_m2,1)} → ${fmt(c.after.CF_pred_g_m2,1)}（${sign(c.delta_cf_gm2)}）</b></div>
-    <div class="kv"><span>裏面平均 CG</span><b>${fmt(c.before.CG_pred_g_m2,1)} → ${fmt(c.after.CG_pred_g_m2,1)}（${sign(c.delta_cg_gm2)}）</b></div>
-    <div class="kv"><span>変更前の位置づけ</span><b>${mlStatusPill(c.before.range_status)}</b></div>
-    <div class="kv"><span>変更後の位置づけ</span><b>${mlStatusPill(c.after.range_status)}</b></div>
+  const d = c.delta_ch_gm2;
+  const pct = c.before.CH_sum_pred_g_m2 ? d / c.before.CH_sum_pred_g_m2 * 100 : 0;
+  const err = (mlBoot.error_reference[c.before.line] || {}).CH_MAE || 0;
+  // 差がモデルの平均誤差より小さければ「差とは言えない」。ここを黙って見せると誤読する。
+  const meaningful = Math.abs(d) > err;
+  const dir = d > 0 ? '増えます' : d < 0 ? '減ります' : '変わりません';
+  let html = `<div class="cmpresult ${d>0?'up':d<0?'down':''}">
+    <div class="h">この変更でめっき付着量は</div>
+    <div class="big">${sign(d)}<small>g/m²（両面合計）</small></div>
+    <div class="s">${fmt(c.before.CH_sum_pred_g_m2,1)} → <b>${fmt(c.after.CH_sum_pred_g_m2,1)}</b> g/m²
+      ／ ${fmt(Math.abs(pct),1)}% ${dir}</div>
+    <div class="j ${meaningful?'ok':'weak'}">${meaningful
+      ? `この差はモデルの平均誤差（${fmt(err,1)} g/m²）より大きく、意味のある差として扱えます。`
+      : `この差はモデルの平均誤差（${fmt(err,1)} g/m²）より小さいため、<b>差があるとは言い切れません</b>。`}</div>
   </div>`;
+
   if (c.diffs.length){
-    html += `<div class="card"><h3>変えた項目</h3><div class="tablewrap"><table><thead><tr>
-      <th>項目</th><th>変更前</th><th>変更後</th><th>差</th></tr></thead><tbody>` +
-      c.diffs.map(d => `<tr><td>${esc((ML_FIELDS[d.field]||{}).label || d.field)}</td>
-        <td>${d.before}</td><td>${d.after}</td><td>${d.delta===null?'-':(d.delta>=0?'+':'')+d.delta}</td></tr>`).join('') +
+    html += `<div class="card"><h3>変えた項目</h3><div class="tbl-wrap"><table><thead><tr>
+      <th>項目</th><th>基準</th><th>変更後</th><th>差</th></tr></thead><tbody>` +
+      c.diffs.map(x => `<tr><td>${esc((ML_FIELDS[x.field]||{}).label || x.field)}</td>
+        <td>${x.before}</td><td>${x.after}</td>
+        <td class="k">${x.delta===null?'—':(x.delta>=0?'+':'')+x.delta}</td></tr>`).join('') +
       `</tbody></table></div></div>`;
   } else {
-    html += `<div class="note plain">変更された項目がありません。</div>`;
+    html += `<div class="note plain">まだ条件を変えていないので、差は出ません。</div>`;
   }
+
+  html += `<div class="card"><h3>内訳と信頼度</h3>
+    <div class="kv"><span>表面平均 CF</span><b>${fmt(c.before.CF_pred_g_m2,1)} → ${fmt(c.after.CF_pred_g_m2,1)}（${sign(c.delta_cf_gm2)}）</b></div>
+    <div class="kv"><span>裏面平均 CG</span><b>${fmt(c.before.CG_pred_g_m2,1)} → ${fmt(c.after.CG_pred_g_m2,1)}（${sign(c.delta_cg_gm2)}）</b></div>
+    <div class="kv"><span>基準の位置づけ</span><b>${mlStatusPill(c.before.range_status)}</b></div>
+    <div class="kv"><span>変更後の位置づけ</span><b>${mlStatusPill(c.after.range_status)}</b></div>
+  </div>`;
+
   if ((c.after.warnings||[]).length){
-    html += `<div class="note warn">${c.after.warnings.map(esc).join('<br>')}</div>`;
+    html += `<div class="note warn"><b>変更後の条件についての注意</b><br>${c.after.warnings.map(esc).join('<br>')}</div>`;
   }
-  html += `<div class="note plain">${esc(c.note)}</div>`;
+  html += `<div class="note plain">
+    圧力・流量・Yノズル位置は、実機ではたがいに連動して動かされています。
+    1項目だけを大きく動かした結果は実績にない組合せになるため、因果効果ではなく
+    「過去実績からの外れ具合を含んだ目安」として読んでください。<br>${esc(c.note)}</div>`;
   $('mlcompare-out').innerHTML = html;
 }
 
@@ -1758,7 +2162,104 @@ async function runDesign(){
   } catch(e){ return; }
   designResult = data.design;
   renderDesign(designResult);
+  renderModeCompare();
   $('design-out').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ---------- 実機モードの条件を理論モードへ写す ---------- */
+/* 写すのは両モードで意味が同じ4項目だけ。Yノズル位置は設備座標であって
+   ノズル〜鋼板の実距離とは確認できていないため、距離としては写さない。 */
+function importFromMl(){
+  if (!mlBoot || !mlState.cond || !mlState.cond.line){
+    toast('先に実機モードで条件を選んでください'); return;
+  }
+  const c = mlState.cond;
+  const clamp = (key, v) => Math.min(FIELDS[key].max, Math.max(FIELDS[key].min, v));
+  const notes = [];
+  if (isFinite(c['中央速度_m_min'])) state.fixed.line_speed_mpm = clamp('line_speed_mpm', c['中央速度_m_min']);
+  if (isFinite(c['製品板幅_mm']))   state.fixed.strip_width_mm  = clamp('strip_width_mm', c['製品板幅_mm']);
+  if (mlState.target !== null && !isNaN(mlState.target)){
+    state.target = clamp('target_cw_one_side_gm2', mlState.target / 2);
+    notes.push(`目標は両面合計 ${fmt(mlState.target,1)} g/m² → 片面 ${fmt(state.target,1)} g/m² に換算しました。`);
+  }
+  if (mlState.line === 'GL'){
+    notes.push('<b>GLの浴温（約600℃）は写していません。</b>この物理モデルは溶融亜鉛（420〜500℃）の'
+             + '物性域が前提で、ガルバリウムには適用できません。理論モードの結果は参考になりません。');
+  } else if (isFinite(c['使用ポット温度_C'])){
+    state.fixed.bath_temp_c = clamp('bath_temp_c', c['使用ポット温度_C']);
+  }
+  notes.push('ノズルすき間とガス種は実績データに無いため、この画面の値のままです。');
+  buildInputs();
+  saveState();
+  $('import-ml-note').innerHTML = `実機モード（${esc(mlState.line)} / ${esc(mlState.code)}）から取り込みました。<br>`
+    + notes.join('<br>');
+  toast('実機モードの条件を取り込みました');
+  runDesign();
+}
+
+/* ---------- 2つのモードの答えを並べる ---------- */
+function modeCompareRow(label, ml, phys, unit, dec, note){
+  const ok = v => v !== null && v !== undefined && !isNaN(v);
+  const cell = v => ok(v) ? `${fmt(v, dec)} <small>${esc(unit)}</small>` : '—';
+  const diff = (ok(ml) && ok(phys) && !note)
+    ? `${phys - ml >= 0 ? '+' : ''}${fmt(phys - ml, dec)}` : '—';
+  return `<tr><td>${esc(label)}</td>
+    <td class="k">${cell(ml)}</td>
+    <td class="k">${cell(phys)}</td>
+    <td class="k">${diff}</td></tr>`
+    + (note ? `<tr class="rownote"><td colspan="4">${note}</td></tr>` : '');
+}
+
+async function renderModeCompare(){
+  const out = $('mode-compare-out');
+  if (!out) return;
+  if (!mlBoot || !mlState.cond || !mlState.cond.line){
+    out.innerHTML = `<div class="note plain">実機モードで条件を選ぶと、ここに比較が出ます。</div>`;
+    return;
+  }
+  if (!designResult || !designResult.candidates || !designResult.candidates.length){
+    out.innerHTML = `<div class="note plain">上の「計算する」を押すと、実機モードとの比較がここに出ます。</div>`;
+    return;
+  }
+  let ml;
+  try { ml = (await py('ml_predict', mlState.cond)).prediction; }
+  catch(e){ console.error(e); out.innerHTML = `<div class="note warn">実機モデルの予測を取得できませんでした。</div>`; return; }
+
+  const c = designResult.candidates[0];
+  const physBoth = c.predicted_cw_gm2 * 2;
+  const gap = physBoth - ml.CH_sum_pred_g_m2;
+  const err = (mlBoot.error_reference[mlState.line] || {}).CH_MAE || 0;
+  const band = err + physBoth * (c.uncertainty_percent || 0) / 100;
+
+  const rows =
+      modeCompareRow('予測めっき付着量（両面合計）', ml.CH_sum_pred_g_m2, physBoth, 'g/m²', 1)
+    + modeCompareRow('ノズル圧力', mlState.cond['表ノズル圧力_kPa'], c.plenum_pressure_kpa, 'kPa', 1)
+    + modeCompareRow('通板速度', mlState.cond['中央速度_m_min'], state.fixed.line_speed_mpm, 'm/min', 1)
+    + modeCompareRow('板幅', mlState.cond['製品板幅_mm'], state.fixed.strip_width_mm, 'mm', 0)
+    + modeCompareRow('浴温', mlState.cond['使用ポット温度_C'], state.fixed.bath_temp_c, '℃', 0)
+    + modeCompareRow('ノズル位置', mlState.cond['表ノズル位置平均_mm'], c.nozzle_strip_distance_mm, 'mm', 2,
+        '実機側は<b>設備Y座標</b>、理論側は<b>ノズル先端〜鋼板の実距離</b>です。基準が違うため差は取れません。');
+
+  const verdict = Math.abs(gap) <= band
+    ? {cls:'ok', text:`差 ${fmt(Math.abs(gap),1)} g/m² は、両モデルの誤差を足した幅（約 ${fmt(band,1)} g/m²）の内側です。`
+        + `<b>2つの見立ては矛盾していません。</b>ただし誤差幅が広いので、一致の証明にはなりません。`}
+    : {cls:'warn', text:`差 ${fmt(Math.abs(gap),1)} g/m² は、両モデルの誤差を足した幅（約 ${fmt(band,1)} g/m²）を超えています。`
+        + `理論モードは実機のノズル形状・すき間・板端の流れを含みません。`
+        + `<b>実機の条件決定には実機モードの値を使ってください。</b>`};
+  const glWarn = mlState.line === 'GL'
+    ? `<div class="note bad"><b>GLでは理論モードの数値を使わないでください。</b>
+         浴温が約600℃のガルバリウムは、この物理モデルが前提とする溶融亜鉛（420〜500℃）の
+         物性域から外れています。ここでの比較は成立しません。</div>` : '';
+
+  out.innerHTML = glWarn + `<div class="tbl-wrap"><table class="cmp2"><thead><tr>
+      <th>項目</th><th>実機モード</th><th>理論モード</th><th>差（理論−実機）</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="note ${verdict.cls === 'ok' ? 'info' : 'warn'}">${verdict.text}</div>
+    <div class="note plain">
+      実機モードは <b>${esc(mlState.line)} / ${esc(mlState.code)}</b> の条件、
+      理論モードは <b>ノズルすき間 ${fmt(state.fixed.nozzle_gap_mm,2)} mm・${state.fixed.gas_type==='air'?'空気':'窒素'}</b> での計算です。
+      ノズルすき間とガス種は実績データに無いため、理論側の仮定になります。
+    </div>`;
 }
 
 function riskPills(c){
@@ -2575,9 +3076,16 @@ import gaswipelab.web_api as _api
     clearTimeout(window._rz);
     window._rz = setTimeout(() => {
       if ($('tab-check').classList.contains('active')) drawDiagram(state.check);
-      if ($('tab-mlhmi').classList.contains('active')) resizeMlPlots();
+      // 隠れているタブのグラフも直す。表示されてから直すのでは間に合わない
+      // （Plotlyは描画時の幅を保持するため、幅の広い状態で描いたグラフが画面をはみ出す）。
+      resizeAllPlots();
     }, 200);
   });
+  // 折りたたみの中のグラフは、閉じている間は幅を測れない。開いた時点で直す。
+  document.addEventListener('toggle', ev => {
+    if (ev.target.tagName === 'DETAILS' && ev.target.open) resizeAllPlots();
+  }, true);
+
   const dz = $('drop');
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('over'));
