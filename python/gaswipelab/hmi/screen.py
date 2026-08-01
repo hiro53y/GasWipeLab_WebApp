@@ -1,13 +1,13 @@
 """実機YG装置監視画面の再現。
 
-ProC由来の条件と実機モデルの予測を、実機HMIと同じ並びの構造化データへ組み替える。
+実績データ由来の条件と実機モデルの予測を、実機HMIと同じ並びの構造化データへ組み替える。
 ここでは推論を一切行わない（渡された予測結果をそのまま配置するだけ）。
 
 各値には次を必ず添える:
-    source     : proc    ProCに実在する列から取得
+    source     : proc    実績データに実在する項目から取得
                  model   実機モデルの予測値
-                 derived ProCの値から算術的に導出（新しい仮定は置かない）
-                 none    ProCに該当列が無く再現できない（未取得）
+                 derived 実績値から算術的に導出（新しい仮定は置かない）
+                 none    該当する記録が無く再現できない（未取得）
     confidence : confirmed  実データ照合で対応が確定
                  likely     ほぼ確実だが正式なタグ定義は未確認
                  unverified 対応関係が未確認。同義扱いしてはいけない
@@ -30,8 +30,8 @@ UNVERIFIED = "unverified"
 #: FL〜FO は「設備座標・駆動軸位置」であり、鋼帯からの実距離とは確認できていない。
 Y_COORD_NOTE = "設備Y座標。鋼帯表面からの実距離であるとは確認できていません。"
 
-#: ProC に該当列が存在しない項目に共通で添える説明。
-NO_SOURCE_NOTE = "ProCに該当列がないため再現できません。"
+#: 該当する記録が存在せず再現できない項目に共通で添える説明。
+NO_SOURCE_NOTE = "この項目は記録が取れていないため再現できません。"
 
 
 def _field(value: Any, unit: str = "", source: str = PROC,
@@ -77,7 +77,7 @@ def build_screen(condition: dict[str, Any], prediction: dict[str, Any] | None = 
 
     Parameters
     ----------
-    condition : ProC正準名の条件（実機モードで使っているもの）
+    condition : 実機モードで使っている正準名の条件
     prediction : 実機モデルの予測結果（`GasWipingPredictor.predict` の戻り値）
     modes : 制御モードの状態。取得できていなければ None
     """
@@ -115,7 +115,7 @@ def build_screen(condition: dict[str, Any], prediction: dict[str, Any] | None = 
             "front": _field(prediction.get("CF_pred_g_m2"), "g/m²", MODEL, UNVERIFIED,
                             "表面平均CFの予測値。画面の表裏の向きとCF/CGの対応は未確認です。", "製品表"),
             "device_total": _missing("装置側の和", "g/m²",
-                                     "装置が表示する合計値。ProCに該当列がないため取得できません。"),
+                                     "装置が表示する合計値。記録が取れていないため取得できません。"),
             "direct_total": _field(prediction.get("CH_direct_pred_g_m2"), "g/m²", MODEL, CONFIRMED,
                                    "両面直接モデルの予測。診断用で、主要値には使いません。", "両面直接モデル"),
         }
@@ -169,10 +169,10 @@ def build_screen(condition: dict[str, Any], prediction: dict[str, Any] | None = 
             "support_roll_ws": _missing("サポートロール回転 WS", "%"),
             "support_roll_ds": _missing("サポートロール回転 DS", "%"),
             "collecting_ws": _field(roll_ws, "mm", DERIVED, UNVERIFIED,
-                                    "ProCの列名は「コレクティングロール位置」で、"
+                                    "実績データ上の名称は「コレクティングロール位置」で、"
                                     "画面の「シフト」と同一かは未確認です。", "コレクティングロール WS"),
             "collecting_ds": _field(roll_ds, "mm", DERIVED, UNVERIFIED,
-                                    "ProCの列名は「コレクティングロール位置」で、"
+                                    "実績データ上の名称は「コレクティングロール位置」で、"
                                     "画面の「シフト」と同一かは未確認です。", "コレクティングロール DS"),
             "pot_temp": _field(_num(condition, "使用ポット温度_C"), "℃", PROC, CONFIRMED,
                                "", "ポット温度"),

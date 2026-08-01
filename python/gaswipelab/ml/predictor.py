@@ -1,4 +1,4 @@
-"""実機プロコンデータ由来モデルの推論。`inference_reference.py` と同じ契約を実装する。
+"""実機の操業実績データ由来モデルの推論。`inference_reference.py` と同じ契約を実装する。
 
 GI: 直接回帰（U:めっき付着量記号をカテゴリ特徴に含む）
 GL: 付着量記号別中央値（baseline）＋ CatBoost 残差

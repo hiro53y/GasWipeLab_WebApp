@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GasWipeLab">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>GasWipeLab v4.1 — ワイピング条件設計</title>
+<title>GasWipeLab v4.2 — ワイピング条件設計</title>
 <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <style>
@@ -114,16 +114,19 @@ nav.bottom{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + env
 .leverstep .d{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.6}
 .plotbox{width:100%;height:260px}
 
-/* ---------- スライダー入力（スマホで指だけ操作できるようにする） ---------- */
+/* ---------- スライダー入力（バーでも数値欄でも同じ値を動かせる） ---------- */
 .srow{padding:11px 0;border-bottom:1px dashed #EEF2F6}
 .srow:last-child{border-bottom:none}
-.srow .top{display:flex;align-items:baseline;gap:8px}
+.srow .top{display:flex;align-items:center;gap:8px}
 .srow .top b{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:#1E293B}
-.srow .top .val{font-size:21px;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums}
-.srow .top .unit{font-size:11.5px;font-weight:600;color:var(--muted)}
-.srow .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:1px}
+.srow .top .val{width:5.4em;padding:4px 6px;border:1px solid #D6E0EA;border-radius:8px;background:#fff;
+  font-size:19px;font-weight:800;color:var(--brand);text-align:right;font-variant-numeric:tabular-nums;
+  -moz-appearance:textfield;appearance:textfield}
+.srow .top .val:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(11,102,183,.14)}
+.srow .top .unit{font-size:11.5px;font-weight:600;color:var(--muted);min-width:2.2em}
+.srow .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:3px}
 .srow .ends{display:flex;justify-content:space-between;font-size:10.5px;color:#94A3B8;margin-top:-4px}
-.srow.out .top .val{color:var(--warn)}
+.srow.out .top .val{color:var(--warn);border-color:var(--warn)}
 input[type=range]{width:100%;margin:8px 0 2px;height:30px;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
 input[type=range]:focus{outline:none}
 input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:4px;
@@ -156,9 +159,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hmi .cv .u{font-size:10.5px;font-weight:600;color:#8A8AA6;margin-left:3px}
-.hmi .cv.proc{color:#5BE8A8}      /* ProC実データ由来 */
+.hmi .cv.proc{color:#5BE8A8}      /* 実績値そのまま */
 .hmi .cv.model{color:#FF8AD8}     /* モデル予測 */
-.hmi .cv.derived{color:#7FD4FF}   /* ProCからの導出 */
+.hmi .cv.derived{color:#7FD4FF}   /* 実績値からの導出 */
 .hmi .cv.none{color:#6B6B80;font-size:12.5px;font-weight:600;text-align:center;
   border-style:dashed;background:#0D0D14}
 .hmi .cv.big{font-size:21px}
@@ -203,6 +206,8 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .hbody{flex:1;min-width:0}
 .hbody b{font-size:13.5px;color:var(--ink)}
 .hbody p{margin:3px 0 0;font-size:12.5px;color:var(--muted);line-height:1.7}
+.hbody p.tipline{margin-top:6px;padding:7px 9px;border-radius:8px;background:#F1F6FB;color:#3C5A73}
+.hbody p.tipline b{font-size:12.5px;color:var(--brand)}
 
 /* 自動再計算中の控えめな表示（全画面オーバーレイを出さない） */
 #mldesign-out.calc{opacity:.45;transition:opacity .12s}
@@ -364,7 +369,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <!-- ============ loading ============ -->
 <div id="loading">
   <div class="spinner"></div>
-  <h1>GasWipeLab v4.1</h1>
+  <h1>GasWipeLab v4.2</h1>
   <div id="load-status">初期化中…（初回のみ 30 秒ほどかかります）</div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:4%"></div></div>
 </div>
@@ -375,7 +380,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <header class="app" id="app-header" style="display:none">
   <div>
     <div class="logo">GasWipeLab</div>
-    <div class="ver">ワイピング条件 事前設定ツール v4.1</div>
+    <div class="ver">ワイピング条件 事前設定ツール v4.2</div>
   </div>
   <div class="spacer"></div>
   <button class="cal-badge" id="cal-badge" onclick="switchTab('calib')">未校正</button>
@@ -439,7 +444,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
         <i>Yノズル位置・ノズル圧力・吹込流量・通板速度</i></div>
     </div>
     <div class="note plain" style="margin-top:10px">
-      答えの根拠は、実機プロコンの <b>6か月・14,390件</b> の実績データです。
+      答えの根拠は、実機の <b>6か月・14,390件</b> の操業実績です。
       物理式ではなく「過去に実際どうだったか」から予測しています。
     </div>
   </div>
@@ -450,12 +455,13 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
       <div class="hnum">1</div>
       <div class="hbody"><b>「条件設計」タブで、作るものを選ぶ</b>
         <p>ライン（GI／GL）と <b>めっき付着量記号</b> を選びます。記号を選んだ時点で、
-        その記号を過去に作ったときの標準的な条件が全部入ります。板厚・板幅も実績値から調整できます。</p>
+        その記号を過去に作ったときの標準的な条件が全部入ります。
+        板厚・板幅ははじめ <b>0.40 mm / 1219 mm</b> なので、作るコイルに合わせて変えてください。</p>
       </div>
     </div>
     <div class="howstep">
       <div class="hnum">2</div>
-      <div class="hbody"><b>目標の付着量をスライダーで決める</b>
+      <div class="hbody"><b>目標の付着量を決める</b>
         <p>初期値はその記号の <b>実績中央値</b> です。そのままでよければ触る必要はありません。
         「実績中央値」「実績の下側P10」などのボタンでも設定できます。</p>
       </div>
@@ -464,7 +470,9 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
       <div class="hnum">3</div>
       <div class="hbody"><b>先に決まっている条件を合わせる</b>
         <p>生産計画で通板速度が決まっているなど、動かせない条件があればここで合わせます。
-        スライダーから指を離すと、答えが自動で計算し直されます。</p>
+        値を変えると答えは自動で計算し直されます。</p>
+        <p class="tipline"><b>入力はバーでも数値欄でも構いません。</b>どちらか一方を動かせばもう一方も追従します。
+        数値欄では <b>←→ キー</b>（上下キーも可）で1目盛ずつ増減できます。</p>
       </div>
     </div>
     <div class="howstep">
@@ -574,8 +582,8 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <div id="tab-mlhmi" class="tab-content">
   <div class="note info" style="margin-top:0">
     「条件設計」で決めた条件を、実機のYG装置監視画面と同じ並びで表示します。
-    値はすべて <b>ProCデータと予測モデル</b> から再現したもので、実機から直接読んでいるわけではありません。
-    <b>ProCに無い項目は「未取得」</b>と表示し、推測値は入れていません。
+    値はすべて <b>操業実績と予測モデル</b> から再現したもので、実機から直接読んでいるわけではありません。
+    <b>再現できない項目は「未取得」</b>と表示し、推測値は入れていません。
   </div>
 
   <div id="hmi-screen"></div>
@@ -1151,17 +1159,25 @@ function buildMlSelect(){
 
 let _sliderSeq = 0;
 
-/* スライダー1本。数値のキーボード入力なしで操作できるようにする。 */
+/* スライダー1本。バーでも右上の数値欄でも同じ値を動かせる。
+   数値欄は上下矢印（ブラウザ標準）に加えて左右矢印でも1目盛ずつ増減する。 */
 function sliderRow(opt){
   const {id, label, unit, hint, min, max, step, dec, value, oninput, onchange, dataKey} = opt;
   const v = (value===null || value===undefined || isNaN(value)) ? (min+max)/2 : Number(value);
-  const clamped = Math.min(max, Math.max(min, v));
+  const outside = v < min - 1e-9 || v > max + 1e-9;
+  // バーは刻みの上にしか止まれない。数値欄には同じ値を出す（両者が食い違って見えないように）。
+  const snapped = Math.min(max, Math.max(min, min + Math.round((Math.min(max, Math.max(min, v)) - min) / step) * step));
+  const clamped = Number(snapped.toFixed(6));
   const pct = max > min ? ((clamped - min) / (max - min) * 100) : 50;
-  const outside = Math.abs(clamped - v) > 1e-9;
   return `<div class="srow ${outside?'out':''}" id="srow-${id}">
     <div class="top">
       <b>${label}</b>
-      <span class="val" id="sval-${id}">${v.toFixed(dec)}</span><span class="unit">${unit}</span>
+      <input type="number" class="val" id="sval-${id}" value="${clamped.toFixed(dec)}"
+             min="${min}" max="${max}" step="${step}" inputmode="${dec>0?'decimal':'numeric'}"
+             aria-label="${label}"
+             oninput="sliderTypeIn('${id}', this)"
+             onkeydown="sliderKeyNudge(event, '${id}', ${dec})"
+             onblur="sliderReformat('${id}', ${dec})"><span class="unit">${unit}</span>
     </div>
     ${hint ? `<div class="hint">${hint}</div>` : ''}
     <input type="range" id="sinp-${id}" min="${min}" max="${max}" step="${step}" value="${clamped}"
@@ -1171,15 +1187,62 @@ function sliderRow(opt){
   </div>`;
 }
 
-/* スライダー操作時に、つまみの塗りと数値表示を更新する。 */
+/* スライダー操作時に、つまみの塗りと数値欄を更新する。
+   入力中の欄は書き換えない（「0.4」と打っている途中に「0.40」へ直さない）。 */
 function sliderPaint(id, el, dec){
   const min = parseFloat(el.min), max = parseFloat(el.max), v = parseFloat(el.value);
   el.style.setProperty('--pct', (max > min ? (v-min)/(max-min)*100 : 50) + '%');
   const out = $('sval-'+id);
-  if (out) out.textContent = v.toFixed(dec);
+  // 入力中の欄は書き換えない。「0.45」と打つ途中の「0.」を勝手に丸めてしまわないため。
+  if (out && out !== document.activeElement && out.dataset.editing !== '1') out.value = v.toFixed(dec);
   const row = $('srow-'+id);
   if (row) row.classList.remove('out');
   return v;
+}
+
+/* 数値欄に入力された値をスライダーへ渡す。以降の処理はスライダー操作と同じ経路に乗せる。 */
+function sliderTypeIn(id, el){
+  const range = $('sinp-'+id);
+  el.dataset.editing = '1';         // 打ち終わる（欄から離れる）まで表示を横取りさせない
+  const v = parseFloat(el.value);
+  if (!range || isNaN(v)) return;   // 空欄や「-」だけの入力途中は何もしない
+  range.value = v;                  // min/max/step はスライダー側で吸収される
+  range.dispatchEvent(new Event('input', {bubbles:true}));
+  sliderCommit(id);
+}
+
+/* 数値欄は打っている最中に再計算しない。手が止まってからまとめて確定する。 */
+const _sliderCommit = {};
+function sliderCommit(id, delay){
+  clearTimeout(_sliderCommit[id]);
+  _sliderCommit[id] = setTimeout(() => {
+    const range = $('sinp-'+id);
+    if (range) range.dispatchEvent(new Event('change', {bubbles:true}));
+  }, delay === undefined ? 450 : delay);
+}
+
+/* 数値欄で左右矢印を押したら1目盛ずつ増減する。 */
+function sliderKeyNudge(ev, id, dec){
+  const dir = ev.key === 'ArrowRight' ? 1 : (ev.key === 'ArrowLeft' ? -1 : 0);
+  if (!dir) return;
+  ev.preventDefault();
+  const range = $('sinp-'+id), el = ev.currentTarget;
+  if (!range) return;
+  const step = parseFloat(range.step) || 1;
+  const cur = parseFloat(el.value);
+  range.value = (isNaN(cur) ? parseFloat(range.value) : cur) + dir * step;
+  el.value = parseFloat(range.value).toFixed(dec);
+  range.dispatchEvent(new Event('input', {bubbles:true}));
+  sliderCommit(id, 250);
+}
+
+/* 欄から離れたら、スライダーが実際に取った値へ表示をそろえる（範囲外・刻み外の入力の後始末）。 */
+function sliderReformat(id, dec){
+  const range = $('sinp-'+id), el = $('sval-'+id);
+  if (!range || !el) return;
+  delete el.dataset.editing;
+  const v = parseFloat(range.value);
+  if (!isNaN(v)) el.value = v.toFixed(dec);
 }
 
 /* スライダーの下限・上限。実績より広い「設備仕様の範囲」をサーバから受け取って使う。
@@ -1194,10 +1257,9 @@ function mlSliderBounds(key){
   else if (r){ min = r.min; max = r.max; }
   else return null;
   if (!(max > min)){ const c = (r && r.median) || 0; min = c - 1; max = c + 1; }
-  // 刻みは「200段くらいになる10のべき乗」を選ぶ。レンジを広げても、
-  // 提案値（例: Yノズル位置 7.13mm）をスライダーで再現できる細かさを保つ。
-  const stepRaw = (max - min) / 200;
-  const step = Math.max(Math.pow(10, -f.dec), Math.pow(10, Math.floor(Math.log10(stepRaw))));
+  // 刻みは表示桁と同じにする（板厚なら0.01、板幅なら1）。こうすると
+  // バーの止まる位置と数値欄の表示が必ず一致し、提案値もそのまま再現できる。
+  const step = Math.pow(10, -f.dec);
   // 浮動小数の誤差でスライダー端が 5.500000000000001 のようにならないよう丸める
   const round = x => Number(x.toFixed(6));
   return {min: round(Math.floor(min/step)*step), max: round(Math.ceil(max/step)*step), step: round(step)};
@@ -1278,7 +1340,7 @@ function buildMlTarget(){
   $('ml-target').innerHTML = sliderRow({
     id: 'target', label: '目標付着量（両面合計）', unit: 'g/m²',
     hint: stats ? `${esc(mlState.code)} の実績中央値 ${stats.CH_median} g/m²（実績のばらつき ${stats.CH_p10}〜${stats.CH_p90}）` : '',
-    min, max, step: 0.5, dec: 1, value: mlState.target,
+    min, max, step: 0.1, dec: 1, value: mlState.target,
     oninput: `mlState.target = sliderPaint('target', this, 1); saveState()`,
     onchange: `runMlDesign(true)`,
   });
@@ -1328,8 +1390,19 @@ async function loadMlDefaults(keepTarget){
 /* ---------- 条件設計 ---------- */
 /* auto=true はスライダーを離した直後の自動再計算。
    画面を勝手に動かさないよう、全画面オーバーレイもスクロールも出さない。 */
+let _mlDesignBusy = false, _mlDesignAgain = false;
 async function runMlDesign(auto){
   if (mlState.target === null || isNaN(mlState.target)){ toast('目標付着量を入力してください'); return; }
+  // 数値欄の連打などで計算要求が重なったときは、最後の1回だけを走らせる。
+  if (_mlDesignBusy){ _mlDesignAgain = true; return; }
+  _mlDesignBusy = true;
+  try { await runMlDesignOnce(auto); }
+  finally {
+    _mlDesignBusy = false;
+    if (_mlDesignAgain){ _mlDesignAgain = false; runMlDesign(auto); }
+  }
+}
+async function runMlDesignOnce(auto){
   const payload = Object.assign({}, mlState.cond, {target_ch_gm2: mlState.target});
   const out = $('mldesign-out');
   let data;
@@ -1472,7 +1545,7 @@ function applyMlProposal(i){
 }
 
 /* ---------- 装置画面タブ ---------- */
-const HMI_SOURCE_LABEL = {proc:'ProC', model:'予測', derived:'導出', none:'未取得'};
+const HMI_SOURCE_LABEL = {proc:'実績', model:'予測', derived:'導出', none:'未取得'};
 
 /* 1マス。値だけでなく「どこから来た値か」を必ず添える。 */
 function hmiCell(f, opt){
@@ -1501,13 +1574,13 @@ function renderHmiScreen(d){
   let h = `<div class="hmi">
     <div class="bar"><span class="t">${esc(s.title)}</span>
       <span>${esc(s.line)}ライン</span>
-      <span class="meta">モデル版 ${esc(s.model_version)} ／ ProCデータからの再現</span></div>
+      <span class="meta">モデル版 ${esc(s.model_version)} ／ 操業実績からの再現</span></div>
 
     <div class="legend">
-      <span><span class="tag proc">ProC</span> 実績データの列から</span>
+      <span><span class="tag proc">実績</span> 実績値をそのまま</span>
       <span><span class="tag model">予測</span> 実機モデルの出力</span>
-      <span><span class="tag derived">導出</span> ProC値から計算</span>
-      <span><span class="tag none">未取得</span> ProCに列が無い</span>
+      <span><span class="tag derived">導出</span> 実績値から計算</span>
+      <span><span class="tag none">未取得</span> 再現できない項目</span>
       <span><span class="tag unv">未確認</span> 画面との対応が未確定</span>
     </div>
 

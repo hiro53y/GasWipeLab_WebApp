@@ -48,6 +48,13 @@ UI_RANGE_EXPAND = 0.25
 #: 目標めっき付着量（両面合計）の入力範囲。
 TARGET_RANGE_GM2 = (40.0, 300.0)
 
+#: 画面を開いたときの製品サイズ。ライン・付着量記号によらずここから始める
+#: （実績中央値だと記号を変えるたびにサイズが動いて比べにくいため）。
+DEFAULT_PRODUCT_SIZE: dict[str, float] = {
+    "製品板厚_mm": 0.40,
+    "製品板幅_mm": 1219.0,
+}
+
 
 def _worse(a: str, b: str) -> str:
     return a if _RANK[a] >= _RANK[b] else b
@@ -70,13 +77,20 @@ class RangeChecker:
         return entry["stats"] if entry else None
 
     def defaults(self, line: str, code: str) -> dict[str, float]:
-        """その記号の実績中央値。実機設計の初期条件として使う。"""
+        """実機設計の初期条件。設備条件はその記号の実績中央値を使う。
+
+        製品板厚・製品板幅だけは `DEFAULT_PRODUCT_SIZE` で固定する。
+        """
         info = self.lines.get(line)
         if not info:
             return {}
         entry = info["codes"].get(code)
         source = entry["features"] if entry else info["features"]
-        return {name: stat["median"] for name, stat in source.items() if stat}
+        values = {name: stat["median"] for name, stat in source.items() if stat}
+        for name, fixed in DEFAULT_PRODUCT_SIZE.items():
+            if name in values:
+                values[name] = fixed
+        return values
 
     def bounds(self, line: str, code: str, feature: str,
                low: str = "p01", high: str = "p99") -> tuple[float, float] | None:

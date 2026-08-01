@@ -110,7 +110,7 @@ def coating_consistency(device_total: float | None, front: float | None,
     """
     if None in (device_total, front, back):
         return {"available": False, "consistent": None, "difference": None,
-                "note": "装置側の合計値がProCにないため確認できません。"}
+                "note": "装置側の合計値が取得できないため確認できません。"}
     computed = front + back
     difference = device_total - computed
     consistent = abs(difference) <= COATING_CONSISTENCY_TOLERANCE_GM2
