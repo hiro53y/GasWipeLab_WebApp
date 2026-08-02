@@ -23,7 +23,16 @@ import math
 from typing import Any, Callable
 
 from gaswipelab.ml.ood import CAUTION, IN_RANGE, OUT_OF_DISTRIBUTION, RangeChecker
-from gaswipelab.ml.predictor import ERROR_REFERENCE, GasWipingPredictor
+from gaswipelab.ml.predictor import (
+    CODE_CHANGE_ERROR_FACTOR,
+    ERROR_REFERENCE,
+    MODEL_SKILL,
+    GasWipingPredictor,
+)
+
+#: 直前のコイルから付着量記号が変わったかどうかを受け取る条件キー。
+#: モデルの入力特徴量ではない（誤差の見積もりにだけ使う）。
+CODE_CHANGED_KEY = "直前コイルから記号変更"
 
 #: 目標に到達したとみなす許容差 [g/m²]。両面合計に対する値。
 SOLVE_TOLERANCE_GM2 = 1.0
@@ -298,17 +307,22 @@ class MachineDesignService:
         }
 
     # ------------------------------------------------------------------
-    def _resolution(self, line: str, difference: float) -> dict[str, Any]:
+    def _resolution(self, line: str, difference: float,
+                    code_changed: bool = False) -> dict[str, Any]:
         """目標との差が、このモデルで判別できる大きさかどうかを述べる。
 
         MAE は誤差の平均であって、個々の予測の信頼区間ではない。
         「MAE より小さいから変更不要」という言い方はできないので、
         ここでは判別可能性だけを述べ、操業判断は利用者に委ねる。
+
+        code_changed=True（直前のコイルから付着量記号が変わった）のときは、
+        実測の誤差倍率をかけて判定を甘くする。切替直後は実際に外れやすいため。
         """
         reference = ERROR_REFERENCE.get(line, {})
-        mae = float(reference.get("CH_MAE", SOLVE_TOLERANCE_GM2))
-        p90 = float(reference.get("CH_P90", mae * 2.0))
-        worst = float(reference.get("CH_MAE_worst", mae))
+        factor = CODE_CHANGE_ERROR_FACTOR.get(line, 1.0) if code_changed else 1.0
+        mae = float(reference.get("CH_MAE", SOLVE_TOLERANCE_GM2)) * factor
+        p90 = float(reference.get("CH_P90", mae * 2.0)) * factor
+        worst = float(reference.get("CH_MAE_worst", mae)) * factor
         if difference <= mae:
             level = "below_mae"
             statement = (
@@ -331,6 +345,11 @@ class MachineDesignService:
                 f"（平均 {mae:.1f} / 90%点 {p90:.1f} g/m²）を上回ります。"
                 "条件を見直す根拠になる差です。"
             )
+        if code_changed:
+            statement += (
+                f"なお直前のコイルから付着量記号が変わるため、誤差の見積もりを実測にもとづき"
+                f"{factor:.2f}倍にしています（切替直後は実際に外れやすいことを確認しています）。"
+            )
         return {
             "gap_gm2": round(difference, 2),
             "mae_gm2": round(mae, 2),
@@ -339,6 +358,8 @@ class MachineDesignService:
             "level": level,
             "statement": statement,
             "basis": reference.get("basis", "rolling"),
+            "code_changed": bool(code_changed),
+            "error_factor": round(factor, 2),
         }
 
     @staticmethod
@@ -419,7 +440,8 @@ class MachineDesignService:
         # とは言えないので、ここでは「モデルがこの差を判別できるかどうか」だけを述べ、
         # 変える／変えないの判断は利用者に残す。
         difference = abs(current_ch - target_ch_gm2)
-        payload["resolution"] = self._resolution(line, difference)
+        payload["resolution"] = self._resolution(line, difference, bool(condition.get(CODE_CHANGED_KEY)))
+        payload["model_skill"] = MODEL_SKILL.get(line)
         payload["model_mae_gm2"] = payload["resolution"]["mae_gm2"]
 
         if difference <= SOLVE_TOLERANCE_GM2:

@@ -35,8 +35,15 @@ from gaswipelab.services.design_service import (
 from gaswipelab.hmi import diagnostics as hmi_diagnostics
 from gaswipelab.hmi import screen as hmi_screen_module
 from gaswipelab.ml.ood import TARGET_RANGE_GM2, RangeChecker
-from gaswipelab.ml.predictor import ERROR_REFERENCE, GasWipingPredictor, OutOfScopeError
+from gaswipelab.ml.predictor import (
+    CODE_CHANGE_ERROR_FACTOR,
+    ERROR_REFERENCE,
+    MODEL_SKILL,
+    GasWipingPredictor,
+    OutOfScopeError,
+)
 from gaswipelab.services.machine_design_service import (
+    CODE_CHANGED_KEY,
     FIXED_NOTE,
     INTERPOLATION_NOTE,
     LEVERS,
@@ -275,6 +282,11 @@ def ml_bootstrap() -> str:
             "lines": lines,
             "levers": [{"key": x.key, "label": x.label, "unit": x.unit, "driver": x.driver} for x in LEVERS],
             "error_reference": ERROR_REFERENCE,
+            # 「記号別中央値を出すだけ」に対する上乗せ分。GLではほぼ無いことを画面に出す。
+            "model_skill": MODEL_SKILL,
+            # 直前コイルから記号が変わったときの誤差倍率（実測）
+            "code_change_error_factor": CODE_CHANGE_ERROR_FACTOR,
+            "code_changed_key": CODE_CHANGED_KEY,
             "fixed_note": FIXED_NOTE,
             "note": INTERPOLATION_NOTE,
         })

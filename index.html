@@ -802,10 +802,14 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
       月ごとに「その月より前だけで学習して、その月を当てる」検証です</b></div>
     <div class="kv"><span>同じ期間で測ると</span><b style="text-align:right">GI 5.1 / GL 1.9 g/m² まで下がりますが、<br>
       これは学習に使った期間での値で、<b>実力ではありません</b></b></div>
-    <div class="kv"><span>GLで残差モデルは効いているか</span><b style="text-align:right">学習期間内では 中央値のみ 2.71 → 1.85 g/m² と改善しますが、<br>
-      <b>学習に使っていない期間では改善が確認できていません</b><br>
-      （中央値のみ 2.74 / 残差あり 2.89 g/m²）。<br>
-      GLの予測は<b>実質「付着量記号ごとの実績中央値」</b>とみなすのが安全です</b></div>
+    <div class="kv"><span>単純な「記号別中央値」より良いのか</span><b style="text-align:right">4フォールドの時系列検証で比較しました<br>
+      <b>GI</b> 中央値のみ 7.40 → モデル 6.72（<b>9.3%改善</b>）<br>
+      <b>GL</b> 中央値のみ 3.29 → モデル 3.20（2.7%）<br>
+      <b>GLはほとんど改善しません。</b>実質「付着量記号ごとの<br>
+      実績中央値」とみなすのが安全です</b></div>
+    <div class="kv"><span>誤差が大きくなるコイル</span><b style="text-align:right"><b>付着量記号を切り替えた直後</b>は誤差が<br>
+      GI 1.25倍・GL 2.21倍になります（実測・p&lt;0.0001）<br>
+      切替直後のコイルでは余裕を見てください</b></div>
     <div class="note plain" style="margin-top:8px">
       <b>この方式の限界。</b>過去にあった条件の組合せの「間を埋める」ことしかできません。
       圧力・流量・Yノズル位置は実機でたがいに連動して動かされてきたため、
@@ -1302,7 +1306,7 @@ function saveState(){
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
     localStorage.setItem(ML_STORE_KEY, JSON.stringify({
       mode: mlState.mode, tab: mlState.tab, line: mlState.line,
-      code: mlState.code, target: mlState.target,
+      code: mlState.code, target: mlState.target, codeChanged: mlState.codeChanged,
     }));
   }catch(e){}
 }
@@ -1491,6 +1495,7 @@ const mlState = {
   // 初回は使い方タブから。2回目以降は前回開いていたタブを localStorage から復元する。
   mode: 'ml', tab: 'mlhelp',
   line: 'GI', code: 'Z08', target: null,
+  codeChanged: false,  // 直前のコイルから付着量記号が変わるか（誤差の見積もりにだけ使う）
   cond: {},      // 条件設計タブの条件（実績モデルの基準）
   compare: {},   // 条件比較タブの「変更後」
 };
@@ -1556,7 +1561,33 @@ function buildMlSelect(){
     <div class="selrow">
       <div class="fl"><b>めっき付着量記号</b><span>${stats ? `${stats.n ? `実績 ${stats.n} 件・` : ''}両面合計の中央値 ${stats.CH_median} g/m²` : ''}</span></div>
       <select onchange="onMlCodeChange(this.value)">${codeOpts}</select>
+    </div>
+    <div class="selrow">
+      <div class="fl"><b>直前のコイル</b><span>切替直後は実測で誤差が
+        ${fmt((mlBoot.code_change_error_factor||{})[mlState.line], 2)} 倍になります</span></div>
+      <div class="seg" id="ml-codechange">
+        <button type="button" class="${mlState.codeChanged?'':'on'}" onclick="setMlCodeChanged(false)">同じ記号</button>
+        <button type="button" class="${mlState.codeChanged?'on':''}" onclick="setMlCodeChanged(true)">記号が変わる</button>
+      </div>
     </div>`;
+}
+
+/* 直前のコイルから付着量記号が変わるか。予測値は変えず、誤差の見積もりだけを変える。 */
+function setMlCodeChanged(changed){
+  mlState.codeChanged = !!changed;
+  buildMlSelect();
+  saveState();
+  runMlDesign(true);
+}
+
+/* 記号切替直後は誤差が大きくなる。表示する参考誤差もその分だけ広げる。 */
+function mlErrorReference(line){
+  const base = (mlBoot.error_reference || {})[line] || {};
+  if (!mlState.codeChanged) return Object.assign({factor: 1}, base);
+  const factor = (mlBoot.code_change_error_factor || {})[line] || 1;
+  return Object.assign({}, base, {
+    CH_MAE: base.CH_MAE * factor, CH_P90: base.CH_P90 * factor, factor,
+  });
 }
 
 let _sliderSeq = 0;
@@ -1881,6 +1912,9 @@ async function loadMlDefaults(keepTarget){
   mlState.compare = Object.assign({}, d.condition);
   buildMlSelect(); buildMlProduct(); buildMlFields(); buildMlTarget(); buildMlEffectTable();
   saveState();
+  // ライン・記号を変えたら答えも出しなおす。
+  // これが無いと、前のラインの答えが残ったままになる（起動時は init が呼ぶので除く）。
+  if (mlReady) await runMlDesign(true);
 }
 
 /* ---------- 条件設計 ---------- */
@@ -1900,6 +1934,7 @@ async function runMlDesign(auto){
 }
 async function runMlDesignOnce(auto){
   const payload = Object.assign({}, mlState.cond, {target_ch_gm2: mlState.target});
+  if (mlBoot.code_changed_key) payload[mlBoot.code_changed_key] = mlState.codeChanged;
   const out = $('mldesign-out');
   let data;
   try {
@@ -1923,7 +1958,8 @@ function mlStatusPill(status){
 }
 
 function mlPredCard(r, target, title){
-  const err = mlBoot.error_reference[r.line] || {};
+  const err = mlErrorReference(r.line);
+  const skill = (mlBoot.model_skill || {})[r.line];
   const diff = (target!==null && !isNaN(target)) ? r.CH_sum_pred_g_m2 - target : null;
   return `<div class="card">
     <h3>${title || '予測付着量'}</h3>
@@ -1934,8 +1970,11 @@ function mlPredCard(r, target, title){
       <div><div class="lab">裏面平均 CG</div><div class="num">${fmt(r.CG_pred_g_m2,1)}</div></div>
     </div>
     <div class="kv" style="margin-top:10px"><span>入力の位置づけ</span><b>${mlStatusPill(r.range_status)}</b></div>
-    <div class="kv"><span>参考誤差（${r.line}・両面合計・時系列検証）</span><b>平均 ${fmt(err.CH_MAE,1)} ／ 10件に1件は ±${fmt(err.CH_P90,1)} 超 g/m²</b></div>
+    <div class="kv"><span>参考誤差（${r.line}・両面合計・時系列検証）${err.factor>1?`<br><small style="color:var(--warn)">記号切替直後のため ${fmt(err.factor,2)} 倍</small>`:''}</span><b>平均 ${fmt(err.CH_MAE,1)} ／ 10件に1件は ±${fmt(err.CH_P90,1)} 超 g/m²</b></div>
     <div class="kv"><span>両面直接モデルとの差</span><b>${fmt(r.CH_direct_minus_sum_g_m2,2)} g/m²</b></div>
+    ${skill ? `<div class="note ${skill.useful?'plain':'warn'}" style="margin-top:10px">
+      <b>記号別中央値と比べて</b>：${fmt(skill.median_only_mae,2)} → <b>${fmt(skill.model_mae,2)} g/m²</b>
+      （${skill.useful?'':'わずか'}${fmt(skill.gain_ratio*100,1)}%改善）<br>${esc(skill.note)}</div>` : ''}
     ${(r.warnings||[]).length ? `<div class="note warn" style="margin-top:10px">${r.warnings.map(esc).join('<br>')}</div>` : ''}
   </div>`;
 }
@@ -2327,7 +2366,7 @@ function renderMlCompare(c){
   const sign = v => (v>=0?'+':'') + fmt(v,1);
   const d = c.delta_ch_gm2;
   const pct = c.before.CH_sum_pred_g_m2 ? d / c.before.CH_sum_pred_g_m2 * 100 : 0;
-  const ref = mlBoot.error_reference[c.before.line] || {};
+  const ref = mlErrorReference(c.before.line);
   const err = ref.CH_MAE || 0, p90 = ref.CH_P90 || err * 2;
   // 平均誤差は信頼区間ではない。ここで言えるのは「モデルがこの差を判別できるか」まで。
   const meaningful = Math.abs(d) > err;
@@ -2449,7 +2488,7 @@ async function renderModeCompare(){
   const c = designResult.candidates[0];
   const physBoth = c.predicted_cw_gm2 * 2;
   const gap = physBoth - ml.CH_sum_pred_g_m2;
-  const err = (mlBoot.error_reference[mlState.line] || {}).CH_MAE || 0;
+  const err = mlErrorReference(mlState.line).CH_MAE || 0;
   const band = err + physBoth * (c.uncertainty_percent || 0) / 100;
 
   const rows =
