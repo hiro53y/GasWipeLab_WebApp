@@ -132,6 +132,12 @@ nav.bottom{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + env
 .srow .numgrp .spin:last-child{border-radius:0 9px 9px 0;border-left:none}
 .srow .numgrp .val{width:4.6em;border-radius:0;border-right:none}
 .srow .numgrp .spin:active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.srow .presets{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.srow .presets .pchip{border:1px solid #CBD5E1;background:#fff;border-radius:8px;
+  padding:9px 10px;min-width:46px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;
+  font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+.srow .presets .pchip:hover{border-color:var(--brand);color:var(--brand)}
+.srow .presets .pchip.on{background:var(--brand);border-color:var(--brand);color:#fff}
 .srow .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:3px}
 .srow .ends{display:flex;justify-content:space-between;font-size:10.5px;color:#94A3B8;margin-top:-4px}
 .srow.out .top .val{color:var(--warn);border-color:var(--warn)}
@@ -305,6 +311,10 @@ details.kb>div{padding:8px 12px 10px}
 details.kb ul{margin:0;padding-left:18px}
 details.kb li{font-size:12.5px;color:#475569;line-height:1.75;margin-bottom:5px}
 details.kb code,.card code{background:#F1F5F9;border-radius:4px;padding:1px 5px;font-size:11.5px;color:#334155}
+details.kb .chip{margin-top:10px}
+.guide .g{font-size:12.5px;color:#475569;line-height:1.8;padding:7px 0;border-bottom:1px solid #F1F5F9}
+.guide .g:last-child{border-bottom:none}
+.guide .t{display:block;font-size:11px;font-weight:800;color:var(--brand);letter-spacing:.02em}
 .srcs{margin-top:12px;font-size:11px;color:var(--muted);line-height:1.8;
   background:#F8FAFC;border-radius:8px;padding:8px 10px}
 .srcs a{color:var(--brand-2);text-decoration:none;border-bottom:1px dotted var(--brand-2)}
@@ -549,6 +559,138 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   </div>
 
   <div class="card">
+    <h2>画面ごとの説明</h2>
+    <p class="sub">
+      画面は <b>実機モード（4つ）</b> と <b>理論モード（4つ）</b> に分かれています。
+      いちばん上のバーでモードを、下のバーでタブを切り替えます。
+      <b>ふだん使うのは実機モードの「条件設計」だけ</b>で足ります。
+    </p>
+
+    <div class="mechhead ml">実機モード ─ 実績から条件を決める（通常はこちら）</div>
+
+    <details class="kb" open><summary>① 条件設計 ── 主役の画面。ここだけで完結します</summary><div>
+      <div class="guide">
+        <div class="g"><span class="t">何をする画面か</span>
+          「この製品を、この付着量で作りたい」と入れると、
+          <b>そのために必要な操業条件</b>（Yノズル位置・ノズル圧力・吹込流量・通板速度）が出ます。</div>
+        <div class="g"><span class="t">入れるもの</span>
+          <b>手順1</b> ライン（GI／GL）・めっき付着量記号・板厚・板幅<br>
+          <b>手順2</b> 目標のめっき付着量（両面合計）<br>
+          <b>手順3</b> すでに決まっている条件（通板速度・ポット温度・2JC進入板温）</div>
+        <div class="g"><span class="t">出てくるもの</span>
+          <b>濃紺のカード</b>が答えです。6項目の操業条件が並び、
+          <b>白く光っている項目が「変えるべき条件」</b>。「▲4.23 変更」はいまの条件からの動かし幅です。</div>
+        <div class="g"><span class="t">読み方のコツ</span>
+          記号を選んだ時点で、その記号を過去に作ったときの標準条件が全部入っています。
+          つまり<b>何も触らなくても「いつもの条件」が表示されている</b>状態です。
+          そこから目標や決まっている条件だけを変えてください。</div>
+        <div class="g"><span class="t">「変更不要」と出たら</span>
+          目標と予測の差が<b>モデルの平均誤差より小さい</b>ということです。
+          それ以上追い込んでも意味がないので、条件はそのままで構いません。</div>
+        <div class="g"><span class="t">下の折りたたみ</span>
+          「いまの条件をすべて確認・変更する」を開くと、モデルが見ている
+          <b>27項目すべて</b>を確認・変更できます。ここも変えれば答えが計算し直されます。</div>
+      </div>
+      <button class="chip" onclick="switchTab('mldesign')">条件設計を開く</button>
+    </div></details>
+
+    <details class="kb"><summary>② 装置画面 ── 現場の監視画面と同じ並びで確認する</summary><div>
+      <div class="guide">
+        <div class="g"><span class="t">何をする画面か</span>
+          条件設計で決めた条件を、<b>実機のYG装置監視画面とそっくりの並び</b>で表示します。
+          現場に指示を出す前の読み合わせに使います。</div>
+        <div class="g"><span class="t">入れるもの</span>
+          ありません。条件設計の内容がそのまま反映されます。</div>
+        <div class="g"><span class="t">出てくるもの</span>
+          製品表（CF）・製品裏（CG）・<b>和（両面合計）</b>の予測、ノズル間隔・高さ・圧力、
+          ポット温度など。下に<b>診断値</b>と<b>応答カーブ3枚</b>が続きます。</div>
+        <div class="g"><span class="t">バッジの意味</span>
+          <b>実績</b>＝実績値そのまま／<b>予測</b>＝モデルの出力／<b>導出</b>＝実績値からの計算／
+          <b>未取得</b>＝再現できない項目／<b>未確認</b>＝実機画面との対応が未確定。
+          <b>「未取得」は0ではなく「わからない」</b>という意味です。推測値は入れていません。</div>
+        <div class="g"><span class="t">応答カーブの見方</span>
+          いまの条件から1項目だけを振ったときの両面合計付着量です。
+          <b>赤い破線＝目標／●＝いまの条件／薄い帯＝実績のP10〜P90</b>。
+          帯の中で目標線と交わる位置が、無理のない着地点です。</div>
+      </div>
+      <button class="chip" onclick="switchTab('mlhmi')">装置画面を開く</button>
+    </div></details>
+
+    <details class="kb"><summary>③ 条件比較 ── 「もし〜したら」を試す</summary><div>
+      <div class="guide">
+        <div class="g"><span class="t">何をする画面か</span>
+          条件設計の条件を<b>基準</b>として、そこから条件を変えたときに
+          <b>付着量がどちらへ何 g/m² 動くか</b>を見ます。
+          条件設計が「目標→条件」なのに対し、こちらは<b>「条件→結果」</b>です。</div>
+        <div class="g"><span class="t">使う場面</span>
+          速度を上げて生産量を増やしたい／圧力を下げてガスを減らしたい／
+          設備を動かす前に影響を確かめたい／提案どおりに設定できないときのズレを見たい。</div>
+        <div class="g"><span class="t">操作</span>
+          ボタン（通板速度±10、ノズル圧力±1、Yノズル位置±1）を押すと基準から積み上がります。
+          バーや数値欄で直接変えても構いません。<b>「基準に戻す」</b>でやり直せます。</div>
+        <div class="g"><span class="t">結果の読み方</span>
+          濃紺のカードに <b>+8.3 g/m²</b> のように出ます。その下の帯が重要で、
+          <b>差がモデルの平均誤差より小さいときは「差があるとは言い切れません」</b>と表示します。
+          この場合、その変更に意味があるとは言えません。</div>
+      </div>
+      <button class="chip" onclick="switchTab('mlcompare')">条件比較を開く</button>
+    </div></details>
+
+    <div class="mechhead phys">理論モード ─ 実績に無い条件を物理式で検討する</div>
+    <p class="sub" style="margin-top:6px">
+      実績データを使わず、文献の物理式だけで計算します。
+      <b>ガス種やノズルすき間を変えたい</b>、<b>実績範囲の外を見たい</b>ときだけ使ってください。
+      <b>GL（ガルバリウム）には使えません</b>（浴温約600℃が物理モデルの前提外）。
+    </p>
+
+    <details class="kb"><summary>④ 条件設計（理論）── 圧力とノズル距離を求める</summary><div>
+      <div class="guide">
+        <div class="g"><span class="t">何をする画面か</span>
+          すき間・速度・浴温・板幅・ガス種を固定したまま、目標の<b>片面</b>付着量を出す
+          <b>噴射圧力</b>と<b>ノズル距離</b>を求めます。</div>
+        <div class="g"><span class="t">実機モードとつなぐ</span>
+          <b>「実機モードの条件を取り込む」</b>ボタンで、通板速度・板幅・浴温・目標を写せます。
+          目標は<b>両面合計→片面に自動換算</b>されます。
+          そのあと下に<b>実機モードとの比較表</b>が出ます。</div>
+        <div class="g"><span class="t">注意</span>
+          目標は<b>片面</b>です（実機モードは両面合計）。
+          Yノズル位置は写しません。実機は設備座標、理論はノズル先端からの実距離で、
+          基準が違うためです。</div>
+      </div>
+    </div></details>
+
+    <details class="kb"><summary>⑤ かんたん ── 速度もすき間も未定のとき</summary><div>
+      <div class="guide">
+        <div class="g"><span class="t">何をする画面か</span>
+          ガス種・板幅・目標付着量の3つだけで、<b>すき間・速度・圧力・距離の一式</b>をまるごと提案します。</div>
+        <div class="g"><span class="t">使う場面</span>
+          新しい仕様の当たりをつけたいとき。決まっている条件が多いなら「条件設計」のほうが適切です。</div>
+      </div>
+    </div></details>
+
+    <details class="kb"><summary>⑥ 検証 ── 決めた条件の余裕を見る</summary><div>
+      <div class="guide">
+        <div class="g"><span class="t">何をする画面か</span>
+          決めた条件が<b>どれだけ余裕を持っているか</b>を確認します。
+          条件が少しずれたときに付着量がどう動くかをグラフで見ます。</div>
+        <div class="g"><span class="t">見るところ</span>
+          スプラッシュ判定（We/We*が1.0を超えると発生域）、モデル信頼度、推定ばらつき、
+          圧力・距離・速度それぞれの感度カーブ。</div>
+      </div>
+    </div></details>
+
+    <details class="kb"><summary>⑦ 実績校正 ── 物理モデルを自ライン用に合わせる</summary><div>
+      <div class="guide">
+        <div class="g"><span class="t">何をする画面か</span>
+          実機の実測付着量CSVを読ませて、<b>物理モデルに自ライン用の補正</b>をかけます。
+          理論モードだけに効きます（実機モードには関係ありません）。</div>
+        <div class="g"><span class="t">使う場面</span>
+          理論モードを本格的に使う前に一度。以降の理論モードの精度が上がります。</div>
+      </div>
+    </div></details>
+  </div>
+
+  <div class="card">
     <h2>知っておくとよいこと</h2>
     <div class="kv"><span><b>付着量は「両面合計」</b></span><b style="text-align:right">表面平均＋裏面平均です。片面平均ではありません。<br>付着量記号もこの値に対応します（Z08→約94、AZ150→約161）</b></div>
     <div class="kv"><span><b>Yノズル位置は「設備座標」</b></span><b style="text-align:right">鋼帯表面からの実距離ではありません。<br>数値が大きいほど鋼帯から遠く、付着量は増えます</b></div>
@@ -682,13 +824,6 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
       理論モードの「条件設計」タブには実機モードの条件を取り込むボタンがあり、
       2つの答えを並べて確かめられます。
     </div>
-  </div>
-
-  <div class="card">
-    <h2>ほかのタブ</h2>
-    <div class="kv"><span><b>装置画面</b></span><b style="text-align:right">決めた条件を、実機のYG装置監視画面と同じ並びで確認する。<br>表面／裏面／両面合計の予測、診断値、応答グラフも見られる</b></div>
-    <div class="kv"><span><b>条件比較</b></span><b style="text-align:right">いまの条件と変更後を並べ、<br>どの項目がどれだけ効いたかを見る</b></div>
-    <div class="kv"><span><b>理論モード</b></span><b style="text-align:right">実績にない条件を物理式で検討する。<br>ガス種・ノズルすき間など実績データに無い項目を扱える<br>（GLは浴温約600℃のため適用外）</b></div>
   </div>
 
   <div class="card">
@@ -1327,8 +1462,11 @@ const ML_FIELDS = {
   '裏ノズル圧力_kPa':        {label:'ノズル圧力（裏）', unit:'kPa', hint:'', dec:2, group:'main'},
   '中央速度_m_min':          {label:'通板速度', unit:'m/min', hint:'ラインスピード', dec:1, group:'main'},
   'ノズル吹込流量_Nm3H':      {label:'ノズル吹込流量', unit:'Nm³/h', hint:'表裏合計の実測流量（暫定定義）。圧力と連動する', dec:0, group:'main'},
-  '製品板厚_mm':             {label:'製品板厚', unit:'mm', hint:'', dec:2, group:'prod', spin:true},
-  '製品板幅_mm':             {label:'製品板幅', unit:'mm', hint:'', dec:0, group:'prod', spin:true},
+  // presets: よく使う寸法。押すとその値になり、答えも計算し直す。
+  '製品板厚_mm':             {label:'製品板厚', unit:'mm', hint:'', dec:2, group:'prod', spin:true,
+                              presets:['0.27','0.40','0.50','0.60','0.80','1.0','1.2','1.6','2.3','3.2']},
+  '製品板幅_mm':             {label:'製品板幅', unit:'mm', hint:'', dec:0, group:'prod', spin:true,
+                              presets:['610','762','914','1000','1219','1350']},
   '2JC進入板温_IR_C':        {label:'2JC進入板温', unit:'℃', hint:'めっき浴に入る直前の板温（赤外線）', dec:0, group:'prod'},
   '使用ポット温度_C':         {label:'ポット温度', unit:'℃', hint:'浴が熱いほど亜鉛の粘度が下がり、持ち上げる膜が薄くなる', dec:0, group:'prod'},
   'ポット張力_kN':           {label:'ポット張力', unit:'kN', hint:'', dec:2, group:'other'},
@@ -1385,7 +1523,7 @@ let _sliderSeq = 0;
 /* スライダー1本。バーでも右上の数値欄でも同じ値を動かせる。
    数値欄は上下矢印（ブラウザ標準）に加えて左右矢印でも1目盛ずつ増減する。 */
 function sliderRow(opt){
-  const {id, label, unit, hint, min, max, step, dec, value, oninput, onchange, dataKey, spin} = opt;
+  const {id, label, unit, hint, min, max, step, dec, value, oninput, onchange, dataKey, spin, presets} = opt;
   const v = (value===null || value===undefined || isNaN(value)) ? (min+max)/2 : Number(value);
   const outside = v < min - 1e-9 || v > max + 1e-9;
   // バーは刻みの上にしか止まれない。数値欄には同じ値を出す（両者が食い違って見えないように）。
@@ -1413,7 +1551,31 @@ function sliderRow(opt){
            style="--pct:${pct}%" oninput="${oninput}" ${onchange ? `onchange="${onchange}"` : ''}
            onpointerdown="sliderReformat('${id}', ${dec})">
     <div class="ends"><span>${min.toFixed(dec)}</span><span>${max.toFixed(dec)}</span></div>
+    ${(presets && presets.length) ? `<div class="presets" id="spre-${id}">` + presets.map(p => {
+      const pv = Number(p);
+      const on = Math.abs(pv - clamped) < step / 2;
+      return `<button type="button" class="pchip ${on?'on':''}" data-v="${pv}"
+        onclick="sliderSet('${id}', ${pv}, ${dec})">${String(p)}</button>`;
+    }).join('') + `</div>` : ''}
   </div>`;
+}
+
+/* よく使う値のボタン。押した時点で確定（再計算）まで行う。 */
+function sliderSet(id, v, dec){
+  const range = $('sinp-'+id), el = $('sval-'+id);
+  if (!range) return;
+  range.value = v;
+  if (el){ delete el.dataset.editing; el.value = parseFloat(range.value).toFixed(dec); }
+  range.dispatchEvent(new Event('input', {bubbles:true}));
+  range.dispatchEvent(new Event('change', {bubbles:true}));
+}
+
+/* いまの値と一致するボタンに印を付ける。 */
+function sliderMarkPresets(id, v, step){
+  const box = $('spre-'+id);
+  if (!box) return;
+  box.querySelectorAll('.pchip').forEach(b =>
+    b.classList.toggle('on', Math.abs(parseFloat(b.dataset.v) - v) < (step || 1e-9) / 2));
 }
 
 /* スライダー操作時に、つまみの塗りと数値欄を更新する。
@@ -1426,6 +1588,7 @@ function sliderPaint(id, el, dec){
   if (out && out !== document.activeElement && out.dataset.editing !== '1') out.value = v.toFixed(dec);
   const row = $('srow-'+id);
   if (row) row.classList.remove('out');
+  sliderMarkPresets(id, v, parseFloat(el.step));
   return v;
 }
 
@@ -1534,7 +1697,7 @@ function mlNumRow(key, value, onchange, onrelease){
     id: sid, label: f.label, unit: f.unit, hint, dec: f.dec,
     min: b.min, max: b.max, step: b.step, value,
     dataKey: onchange==='setMlField' ? key : null,
-    spin: !!f.spin,
+    spin: !!f.spin, presets: f.presets,
     oninput: `${onchange}('${key}', sliderPaint('${sid}', this, ${f.dec}))`,
     onchange: onrelease || null,
   });
@@ -1596,7 +1759,9 @@ function mlCatRow(key, value, onchange){
 
 function buildMlFields(){
   const groups = {main:[], prod:[], other:[]};
-  Object.keys(ML_FIELDS).forEach(k => groups[ML_FIELDS[k].group].push(mlNumRow(k, mlState.cond[k], 'setMlField')));
+  // 詳細パネルでも、値を変えたら答えを計算し直す（手順1・手順3と同じ動き）
+  Object.keys(ML_FIELDS).forEach(k =>
+    groups[ML_FIELDS[k].group].push(mlNumRow(k, mlState.cond[k], 'setMlField', 'runMlDesign(true)')));
   const cats = Object.keys(ML_CATS).map(k => mlCatRow(k, mlState.cond[k], 'setMlField')).join('');
   $('ml-fields').innerHTML = `
     ${groups.main.join('')}
