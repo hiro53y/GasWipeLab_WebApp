@@ -1,6 +1,6 @@
 """入力が実績分布のどこにいるかを判定する（OOD判定）。
 
-実機モデルは観測データの統計的補間であり、学習範囲の外では保証がない。
+実績モデルは観測データの統計的補間であり、学習範囲の外では保証がない。
 そのため予測を返す前に、入力が実績のどこに位置するかを必ず添えて返す。
 
 判定:
@@ -125,8 +125,14 @@ class RangeChecker:
         expanded_low = low - margin
         # 実績が全て0以上の量（位置・圧力・流量など）は負にしない。
         # WS-DS差のように実績が負を含む項目は、そのまま下へ広げる。
-        if low >= 0.0:
-            expanded_low = max(0.0, expanded_low)
+        if low > 0.0:
+            # さらに、実績最小値の半分より下へは広げない。
+            # Yノズル位置のようにレンジが広い項目は margin が最小値を上回り、
+            # 単純に0で止めると「Yノズル位置 0 mm」という設備座標の原点を
+            # 提案してしまう（実際に GL/AZM100 で発生した）。
+            expanded_low = max(expanded_low, low * 0.5)
+        elif low == 0.0:
+            expanded_low = 0.0
         return (expanded_low, high + margin)
 
     def ui_ranges(self, line: str) -> dict[str, list[float]]:
@@ -160,6 +166,61 @@ class RangeChecker:
             return 0.0
         beta = entry.get("beta_gm2_per_unit", 0.0)
         return 1.0 if beta > 0 else (-1.0 if beta < 0 else 0.0)
+
+    # ------------------------------------------------------------------
+    # 組合せとして実績にあるか（多変量の近傍判定）
+    #
+    # 項目ごとのレンジ判定だけでは、「板厚0.4 も 速度160 もそれぞれ実績内だが、
+    # その2つを同時に満たすコイルは1本も無い」という入力を通してしまう。
+    # 付着量記号ごとの実績分布に対するマハラノビス距離で、共起関係まで見る。
+    # ------------------------------------------------------------------
+    def combination_distance(self, line: str, code: str,
+                             values: dict[str, Any]) -> dict[str, Any] | None:
+        """実績の雲からの距離。判定できないときは None。"""
+        info = self.lines.get(line)
+        entry = (info or {}).get("codes", {}).get(code)
+        envelope = (entry or {}).get("envelope")
+        if not envelope:
+            return None
+        features = envelope["features"]
+        vector = []
+        for name in features:
+            raw = values.get(name)
+            if raw is None:
+                return None
+            try:
+                number = float(raw)
+            except (TypeError, ValueError):
+                return None
+            if math.isnan(number):
+                return None
+            vector.append(number)
+
+        mean = envelope["mean"]
+        inverse = envelope["inv_cov"]
+        delta = [vector[i] - mean[i] for i in range(len(features))]
+        # d^2 = delta^T * inv_cov * delta
+        squared = 0.0
+        for i, row in enumerate(inverse):
+            squared += delta[i] * sum(row[j] * delta[j] for j in range(len(delta)))
+        distance = math.sqrt(max(squared, 0.0))
+
+        p90 = float(envelope["d_p90"])
+        p99 = float(envelope["d_p99"])
+        if distance <= p90:
+            level = "typical"
+        elif distance <= p99:
+            level = "unusual"
+        else:
+            level = "unseen"
+        return {
+            "distance": round(distance, 3),
+            "d_p90": round(p90, 3),
+            "d_p99": round(p99, 3),
+            "level": level,
+            "features": features,
+            "n": envelope["n"],
+        }
 
     def model_ranges(self, line: str) -> dict[str, tuple[float, float]]:
         """モデルが実際に学習した範囲。外挿量の判定に使う。"""
@@ -255,6 +316,25 @@ class RangeChecker:
                         f"（約 {expected:.0f} Nm³/h）から外れています。実績では圧力と流量は連動しています。"
                     )
 
+        # 各項目が範囲内でも、その組合せが実績に無いことがある。
+        # 判定は CAUTION 止まりにする（個々の値は実績内なので「範囲外」とは言えない）。
+        combination = self.combination_distance(line, code, values)
+        if combination:
+            if combination["level"] == "unseen":
+                status = _worse(status, CAUTION)
+                warnings.append(
+                    f"各項目は実績範囲内ですが、この {len(combination['features'])} 項目の"
+                    f"組合せは{code}の実績（{combination['n']}件）に見当たりません"
+                    f"（実績分布からの距離 {combination['distance']:.1f}／実績の99%は "
+                    f"{combination['d_p99']:.1f} 以内）。予測の信頼度が下がります。"
+                )
+            elif combination["level"] == "unusual":
+                warnings.append(
+                    f"この組合せは{code}の実績としては珍しい部類です"
+                    f"（実績分布からの距離 {combination['distance']:.1f}／実績の90%は "
+                    f"{combination['d_p90']:.1f} 以内）。"
+                )
+
         if consistency_gap is not None and abs(consistency_gap) > CONSISTENCY_GAP_LIMIT_GM2:
             status = _worse(status, CAUTION)
             warnings.append(
@@ -262,4 +342,5 @@ class RangeChecker:
                 "予測の不確かさが大きい条件です。"
             )
 
-        return {"status": status, "fields": fields, "warnings": warnings}
+        return {"status": status, "fields": fields, "warnings": warnings,
+                "combination": combination}

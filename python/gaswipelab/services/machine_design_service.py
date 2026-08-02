@@ -1,4 +1,4 @@
-"""実機モデルによる条件設計（逆算）。
+"""実績モデルによる条件設計（逆算）。
 
 物理モデル側の design_service と役割は同じだが、こちらは実機データ由来の
 CatBoost モデルを前向きに評価して数値的に反転する。
@@ -8,10 +8,13 @@ CatBoost モデルを前向きに評価して数値的に反転する。
     モデル応答は必ずしも単調ではない。区間全体を走査して交差点を全部拾い、
     「いまの条件からの変更量が最小」の解を選ぶ。
 
-変更提案の優先順位（ユーザー承認済み）:
-    1. Yノズル位置   … 実績で最も効くレバー（記号内相関 GI +0.42 / GL +0.35）
-    2. 通板速度      … 効きは弱い（速度が上がると持ち出しが増えめっき付着量は増加）
-    3. ノズル圧力    … 実績ではほぼ固定。動かすと流量も連動させる必要がある
+変更提案の優先順位は **操業方針であって、モデルが決めたものではない**:
+    1. Yノズル位置   … 単独で動かしやすく、実績のばらつきも最もよく説明する
+    2. 通板速度      … 生産計画に影響するため位置の次
+    3. ノズル圧力    … 実績ではほぼ固定運用。動かすと流量も連動するので最後
+モデルが言えるのは「実績のばらつきを説明する寄与の大きさ」までで、
+どれから動かすべきかは操業側の取り決めである（LEVER_ORDER_BASIS を参照）。
+
 提案しない項目: 製品板厚・製品板幅・付着量記号・ライン（製品仕様/設備仕様のため）
 """
 from __future__ import annotations
@@ -48,6 +51,18 @@ INTERPOLATION_NOTE = (
     "この結果は過去実績の範囲内での統計的補間です。設備条件を独立に動かしたときの"
     "因果効果を保証するものではありません。"
 )
+
+#: 提案順の根拠。モデルの出力ではなく操業側の取り決めであることを画面に明示するために持つ。
+LEVER_ORDER_BASIS = {
+    "source": "operational_policy",
+    "text": (
+        "変更を試す順番（Yノズル位置 → 通板速度 → ノズル圧力）は操業上の取り決めです。"
+        "モデルが決めた順位ではありません。"
+        "実績データから言えるのは各項目が実績のばらつきをどれだけ説明するかまでで、"
+        "圧力・流量・Yノズル位置は実機で連動して動かされてきたため、"
+        "1項目だけ動かしたときの効果を切り分けることはできません。"
+    ),
+}
 
 
 class Lever:
@@ -161,6 +176,7 @@ class MachineDesignService:
         result["range_status"] = judgement["status"]
         result["range_fields"] = judgement["fields"]
         result["warnings"] = judgement["warnings"]
+        result["combination"] = judgement.get("combination")
         result["note"] = INTERPOLATION_NOTE
         return result
 
@@ -281,6 +297,80 @@ class MachineDesignService:
             "extrapolated": bool(result.get("extrapolated_features")),
         }
 
+    # ------------------------------------------------------------------
+    def _resolution(self, line: str, difference: float) -> dict[str, Any]:
+        """目標との差が、このモデルで判別できる大きさかどうかを述べる。
+
+        MAE は誤差の平均であって、個々の予測の信頼区間ではない。
+        「MAE より小さいから変更不要」という言い方はできないので、
+        ここでは判別可能性だけを述べ、操業判断は利用者に委ねる。
+        """
+        reference = ERROR_REFERENCE.get(line, {})
+        mae = float(reference.get("CH_MAE", SOLVE_TOLERANCE_GM2))
+        p90 = float(reference.get("CH_P90", mae * 2.0))
+        worst = float(reference.get("CH_MAE_worst", mae))
+        if difference <= mae:
+            level = "below_mae"
+            statement = (
+                f"目標との差 {difference:.1f} g/m² は、このモデルの平均絶対誤差 {mae:.1f} g/m²"
+                f"（月別の最悪月で {worst:.1f}）より小さい差です。"
+                "モデルはこの大きさの差を判別できません。"
+                "実機で差が出るかどうかは、このツールでは判断できません。"
+            )
+        elif difference <= p90:
+            level = "below_p90"
+            statement = (
+                f"目標との差 {difference:.1f} g/m² は平均絶対誤差 {mae:.1f} g/m² より大きいものの、"
+                f"予測の10件に1件は {p90:.1f} g/m² 以上外れます。"
+                "差の向きは参考になりますが、値そのものは幅を持って読んでください。"
+            )
+        else:
+            level = "above_p90"
+            statement = (
+                f"目標との差 {difference:.1f} g/m² は、このモデルの誤差の大きさ"
+                f"（平均 {mae:.1f} / 90%点 {p90:.1f} g/m²）を上回ります。"
+                "条件を見直す根拠になる差です。"
+            )
+        return {
+            "gap_gm2": round(difference, 2),
+            "mae_gm2": round(mae, 2),
+            "mae_worst_gm2": round(worst, 2),
+            "p90_gm2": round(p90, 2),
+            "level": level,
+            "statement": statement,
+            "basis": reference.get("basis", "rolling"),
+        }
+
+    @staticmethod
+    def _add_out_of_range_caution(payload: dict[str, Any], proposal: dict[str, Any]) -> None:
+        """実績の外へ出る提案に、操業側の注意を添える。
+
+        これは統計的な主張ではない。「モデルが判別しきれない差を埋めるために、
+        根拠のない領域へ出るのは避ける」という運用上の判断であることを明示する。
+        """
+        if not proposal.get("out_of_range"):
+            return
+        level = payload.get("resolution", {}).get("level")
+        if level == "above_p90":
+            return
+        resolution = payload.get("resolution", {})
+        gap = resolution.get("gap_gm2")
+        mae = resolution.get("mae_gm2")
+        p90 = resolution.get("p90_gm2")
+        if level == "below_mae":
+            head = (f"目標との差 {gap} g/m² は、このモデルの平均絶対誤差 {mae} g/m² より小さく、"
+                    "モデルはこの差を判別できません。")
+        else:
+            head = (f"目標との差 {gap} g/m² は平均絶対誤差 {mae} g/m² を超えますが、"
+                    f"予測の10件に1件は ±{p90} g/m² 以上外れる水準です。")
+        payload["operational_caution"] = (
+            head
+            + f"その差を埋めるために{proposal['label']}を実績にない値まで動かすことになります。"
+            "統計的にこの変更が不要と言えるわけではありませんが、"
+            "確かめようのない差のために実績外へ出る操作は勧めません"
+            "（モデルの主張ではなく、運用側の判断です）。"
+        )
+
     def achievable_range(self, base: dict[str, Any], line: str, code: str) -> dict[str, float]:
         """Yノズル位置を実績範囲いっぱいに振ったときに届くCHの範囲。"""
         bounds = self.checker.bounds(line, code, FRONT_POSITION)
@@ -323,26 +413,22 @@ class MachineDesignService:
                 "予測値も操業範囲も信頼度が低いため、参考程度に扱ってください。"
             )
 
-        # モデル自身の平均誤差より小さい差を埋めようとしても意味がない。
-        # 無理に条件を動かすと、実績外の極端な操作を推奨してしまうため、
-        # 「モデルの分解能の範囲内」として変更なしで返す。
-        mae = float(ERROR_REFERENCE.get(line, {}).get("CH_MAE", SOLVE_TOLERANCE_GM2))
-        tolerance = max(SOLVE_TOLERANCE_GM2, mae)
+        # 目標との差を、このモデルの誤差分布と突き合わせる。
+        #
+        # MAE は個々の予測の信頼区間ではない。「差が MAE より小さいから変えなくてよい」
+        # とは言えないので、ここでは「モデルがこの差を判別できるかどうか」だけを述べ、
+        # 変える／変えないの判断は利用者に残す。
         difference = abs(current_ch - target_ch_gm2)
-        payload["model_mae_gm2"] = round(mae, 2)
-        if difference <= tolerance:
+        payload["resolution"] = self._resolution(line, difference)
+        payload["model_mae_gm2"] = payload["resolution"]["mae_gm2"]
+
+        if difference <= SOLVE_TOLERANCE_GM2:
+            # モデルの出力そのものが目標に一致している。ここは統計的主張ではなく計算結果。
             payload["status"] = "ok"
-            if difference <= SOLVE_TOLERANCE_GM2:
-                payload["message"] = (
-                    f"いまの条件のままで目標 {target_ch_gm2:.1f} g/m² に届いています"
-                    f"（予測 {current_ch:.1f} g/m²・両面合計）。"
-                )
-            else:
-                payload["message"] = (
-                    f"予測 {current_ch:.1f} g/m² と目標 {target_ch_gm2:.1f} g/m² の差は "
-                    f"{difference:.1f} g/m² で、このモデルの平均誤差 {mae:.1f} g/m² の範囲内です。"
-                    "条件を変える必要はありません（これ以上の追い込みはモデルの分解能を超えます）。"
-                )
+            payload["message"] = (
+                f"いまの条件のままで、モデルの予測は目標 {target_ch_gm2:.1f} g/m² と"
+                f"ほぼ同じです（予測 {current_ch:.1f} g/m²・両面合計）。"
+            )
             return payload
 
         # 第1段: 実績の操業範囲内で、効き目の大きい順に1項目ずつ試す。
@@ -356,7 +442,9 @@ class MachineDesignService:
                     "unusable": True,
                     "reason": (
                         f"{line}の実績では{lever.label}がほとんど動いておらず、"
-                        f"めっき付着量への効果を特定できません（実績全幅で {effect:.1f} g/m² 相当）。"
+                        f"めっき付着量のばらつきをこの項目で説明できません"
+                        f"（実績の振れ幅ぜんぶで {effect:.1f} g/m² 相当）。"
+                        "実機で効かないという意味ではなく、実績データからは判断できないという意味です。"
                         "このため変更提案には使いません。"
                     ),
                 })
@@ -398,6 +486,7 @@ class MachineDesignService:
                 f"予測 {found['result']['CH_sum_pred_g_m2']:.1f} g/m²（両面合計）。"
                 "実績にない領域のため、境界の傾きを延長した参考値です。"
             )
+            self._add_out_of_range_caution(payload, found)
             return payload
 
         # どのレバーでもちょうど到達できないとき、いちばん近づく案を出す。
@@ -425,6 +514,7 @@ class MachineDesignService:
                     f"目標との差 {best['error_gm2']:+.1f} g/m²）。"
                 )
                 payload["achievable"] = self.achievable_range(base, line, code)
+                self._add_out_of_range_caution(payload, best)
                 return payload
 
         payload["status"] = "infeasible"

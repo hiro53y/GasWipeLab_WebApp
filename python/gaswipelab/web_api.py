@@ -57,7 +57,7 @@ _design = DesignService(_analysis)
 #: 305 は予測自体を拒否する（ウォーマーコイル）。122 は運用対象外のため一覧から隠す。
 HIDDEN_COATING_CODES = frozenset({"305", "122"})
 
-# --- 実機モデル（v4.0）。モデルJSONが重いので初回アクセス時に読み込む ---
+# --- 実績モデル（v4.0）。モデルJSONが重いので初回アクセス時に読み込む ---
 _MODEL_DIRS = ("/models", "models", "deliverables/GasWipeLab_WebApp/models")
 _machine_state: dict[str, Any] = {"predictor": None, "checker": None, "service": None, "reference": None}
 
@@ -68,7 +68,7 @@ def _model_dir() -> str:
     for candidate in _MODEL_DIRS:
         if (Path(candidate) / "manifest.json").exists():
             return candidate
-    raise FileNotFoundError("実機モデル（models/manifest.json）が見つかりません。")
+    raise FileNotFoundError("実績モデル（models/manifest.json）が見つかりません。")
 
 
 def _machine() -> MachineDesignService:
@@ -244,7 +244,7 @@ def coating_map(payload_json: str) -> str:
 
 
 # ==================================================================
-# 実機モデル（実機の操業実績データ由来）
+# 実績モデル（実機の操業実績データ由来）
 # ==================================================================
 def ml_bootstrap() -> str:
     """ライン・付着量記号・カテゴリ選択肢・レンジ・誤差参考値をまとめて返す。"""
@@ -255,7 +255,8 @@ def ml_bootstrap() -> str:
         lines = {}
         for line, info in reference["lines"].items():
             lines[line] = {
-                "n": info["n"],
+                # 公開用に件数を落とした reference.json（build_reference_data.py --redact）でも動くようにする
+                "n": info.get("n"),
                 "features": info["features"],
                 "categories": info["categories"],
                 "flow": info["flow"],
@@ -344,7 +345,7 @@ def ml_compare(payload_json: str) -> str:
 def hmi_screen(payload_json: str) -> str:
     """実機YG装置監視画面の再現データ。
 
-    予測は既存の実機モデルをそのまま呼ぶだけで、モデルや前処理には手を入れていない。
+    予測は既存の実績モデルをそのまま呼ぶだけで、モデルや前処理には手を入れていない。
     記録が無い項目は推測で埋めず、未取得として返す。
     """
     try:

@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GasWipeLab">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>GasWipeLab v4.2 — ワイピング条件設計</title>
+<title>GasWipeLab v4.3 — ワイピング条件設計</title>
 <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <style>
@@ -83,7 +83,7 @@ nav.bottom{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + env
 .mode-btn.active{color:#fff;background:var(--brand);border-color:var(--brand)}
 .mode-btn.active span{color:rgba(255,255,255,.82)}
 
-/* ---------- 実機モード ---------- */
+/* ---------- 実績モデル ---------- */
 .mlgrid{display:grid;grid-template-columns:1fr;gap:10px}
 @media(min-width:700px){.mlgrid{grid-template-columns:1fr 1fr}}
 .selrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed #EEF2F6}
@@ -443,7 +443,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <!-- ============ loading ============ -->
 <div id="loading">
   <div class="spinner"></div>
-  <h1>GasWipeLab v4.2</h1>
+  <h1>GasWipeLab v4.3</h1>
   <div id="load-status">初期化中…（初回のみ 30 秒ほどかかります）</div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:4%"></div></div>
 </div>
@@ -454,7 +454,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <header class="app" id="app-header" style="display:none">
   <div>
     <div class="logo">GasWipeLab</div>
-    <div class="ver">ワイピング条件 事前設定ツール v4.2</div>
+    <div class="ver">ワイピング条件 事前設定ツール v4.3</div>
   </div>
   <div class="spacer"></div>
   <button class="cal-badge" id="cal-badge" onclick="switchTab('calib')">未校正</button>
@@ -462,8 +462,8 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 
 <!-- ============ モード切替 ============ -->
 <div class="modebar" id="app-mode" style="display:none">
-  <button class="mode-btn active" id="mode-ml" onclick="switchMode('ml')">実機モード</button>
-  <button class="mode-btn" id="mode-phys" onclick="switchMode('phys')">理論モード</button>
+  <button class="mode-btn active" id="mode-ml" onclick="switchMode('ml')">実績モデル<span>過去実績から学習</span></button>
+  <button class="mode-btn" id="mode-phys" onclick="switchMode('phys')">理論モデル<span>物理式で計算</span></button>
 </div>
 
 <!-- ============ nav ============ -->
@@ -510,6 +510,12 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
       <b>「目標の付着量を出すには、ノズルをどこに置けばよいか」を答えるツール</b>です。
       実機を動かす前に、操業条件を決めるために使います。
     </p>
+    <div class="note warn" style="margin-top:0">
+      <b>このアプリは実機とつながっていません。</b>
+      ブラウザの中だけで計算しており、PLCやプロセスコンピュータへの読み書きは一切行いません。
+      表示される値はすべて<b>過去実績から学習したモデルの予測</b>か<b>物理式の計算結果</b>で、
+      いま実機で起きていることではありません。
+    </div>
     <div class="flowbox">
       <div class="flowstep"><span class="n">入力</span><b>作るもの＋目標の付着量</b>
         <i>例：GIラインで Z08 を、両面合計 94 g/m² で作りたい</i></div>
@@ -561,12 +567,12 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   <div class="card">
     <h2>画面ごとの説明</h2>
     <p class="sub">
-      画面は <b>実機モード（4つ）</b> と <b>理論モード（4つ）</b> に分かれています。
+      画面は <b>実績モデル（4つ）</b> と <b>理論モデル（4つ）</b> に分かれています。
       いちばん上のバーでモードを、下のバーでタブを切り替えます。
-      <b>ふだん使うのは実機モードの「条件設計」だけ</b>で足ります。
+      <b>ふだん使うのは実績モデルの「条件設計」だけ</b>で足ります。
     </p>
 
-    <div class="mechhead ml">実機モード ─ 実績から条件を決める（通常はこちら）</div>
+    <div class="mechhead ml">実績モデル ─ 実績から条件を決める（通常はこちら）</div>
 
     <details class="kb" open><summary>① 条件設計 ── 主役の画面。ここだけで完結します</summary><div>
       <div class="guide">
@@ -636,7 +642,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
       <button class="chip" onclick="switchTab('mlcompare')">条件比較を開く</button>
     </div></details>
 
-    <div class="mechhead phys">理論モード ─ 実績に無い条件を物理式で検討する</div>
+    <div class="mechhead phys">理論モデル ─ 実績に無い条件を物理式で検討する</div>
     <p class="sub" style="margin-top:6px">
       実績データを使わず、文献の物理式だけで計算します。
       <b>ガス種やノズルすき間を変えたい</b>、<b>実績範囲の外を見たい</b>ときだけ使ってください。
@@ -648,12 +654,12 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
         <div class="g"><span class="t">何をする画面か</span>
           すき間・速度・浴温・板幅・ガス種を固定したまま、目標の<b>片面</b>付着量を出す
           <b>噴射圧力</b>と<b>ノズル距離</b>を求めます。</div>
-        <div class="g"><span class="t">実機モードとつなぐ</span>
-          <b>「実機モードの条件を取り込む」</b>ボタンで、通板速度・板幅・浴温・目標を写せます。
+        <div class="g"><span class="t">実績モデルとつなぐ</span>
+          <b>「実績モデルの条件を取り込む」</b>ボタンで、通板速度・板幅・浴温・目標を写せます。
           目標は<b>両面合計→片面に自動換算</b>されます。
-          そのあと下に<b>実機モードとの比較表</b>が出ます。</div>
+          そのあと下に<b>実績モデルとの比較表</b>が出ます。</div>
         <div class="g"><span class="t">注意</span>
-          目標は<b>片面</b>です（実機モードは両面合計）。
+          目標は<b>片面</b>です（実績モデルは両面合計）。
           Yノズル位置は写しません。実機は設備座標、理論はノズル先端からの実距離で、
           基準が違うためです。</div>
       </div>
@@ -683,9 +689,9 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
       <div class="guide">
         <div class="g"><span class="t">何をする画面か</span>
           実機の実測付着量CSVを読ませて、<b>物理モデルに自ライン用の補正</b>をかけます。
-          理論モードだけに効きます（実機モードには関係ありません）。</div>
+          理論モデルだけに効きます（実績モデルには関係ありません）。</div>
         <div class="g"><span class="t">使う場面</span>
-          理論モードを本格的に使う前に一度。以降の理論モードの精度が上がります。</div>
+          理論モデルを本格的に使う前に一度。以降の理論モデルの精度が上がります。</div>
       </div>
     </div></details>
   </div>
@@ -694,7 +700,8 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
     <h2>知っておくとよいこと</h2>
     <div class="kv"><span><b>付着量は「両面合計」</b></span><b style="text-align:right">表面平均＋裏面平均です。片面平均ではありません。<br>付着量記号もこの値に対応します（Z08→約94、AZ150→約161）</b></div>
     <div class="kv"><span><b>Yノズル位置は「設備座標」</b></span><b style="text-align:right">鋼帯表面からの実距離ではありません。<br>数値が大きいほど鋼帯から遠く、付着量は増えます</b></div>
-    <div class="kv"><span><b>いちばん効くのはYノズル位置</b></span><b style="text-align:right">実機では圧力はほぼ固定運用です。<br>そのため位置→速度→圧力の順で変更を提案します</b></div>
+    <div class="kv"><span><b>Yノズル位置は実績のばらつきを最もよく説明する</b></span><b style="text-align:right">「いちばん効く」という意味ではありません。<br>圧力・流量・Yノズル位置は実機で連動して動かされてきたため、<br>1項目だけの効果は実績データから切り分けられません</b></div>
+    <div class="kv"><span><b>提案の順番は操業方針</b></span><b style="text-align:right">位置→速度→圧力の順はモデルが決めたものではなく、<br>操業上の取り決めです（圧力はほぼ固定運用のため最後）</b></div>
     <div class="kv"><span><b>吹込流量は圧力に連動</b></span><b style="text-align:right">実績で圧力と流量は強く連動しています。<br>圧力を変えた提案では流量も自動で追従させています</b></div>
     <div class="kv"><span><b>板幅・板厚・記号は変更提案しない</b></span><b style="text-align:right">製品仕様・設備仕様のため、<br>これらを変える提案は出しません</b></div>
 
@@ -782,7 +789,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
     <p class="sub">2つのモードは<b>まったく別の原理</b>で答えを出しています。
       結果をどこまで信じてよいかは、この違いを知っているかで変わります。</p>
 
-    <div class="mechhead ml">実機モード ─ 過去実績から学んだ統計モデル</div>
+    <div class="mechhead ml">実績モデル ─ 過去実績から学んだ統計モデル</div>
     <div class="kv"><span>種類</span><b style="text-align:right">勾配ブースティング決定木（CatBoost）<br><b>物理式は一切使いません</b></b></div>
     <div class="kv"><span>学習データ</span><b style="text-align:right">実機6か月・14,390件<br>（GI 7,076 / GL 7,314・製品1本につき代表値1点）</b></div>
     <div class="kv"><span>入力</span><b style="text-align:right">数値18項目＋区分9項目<br>（付着量記号・スパングル・化成処理・材質・規格など）</b></div>
@@ -790,14 +797,22 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
     <div class="kv"><span>GIとGLの違い</span><b style="text-align:right">GIは直接予測。GLは<b>付着量記号ごとの実績中央値を土台</b>にして、<br>そこからのズレ（残差）だけをモデルが予測します</b></div>
     <div class="kv"><span>条件の逆算</span><b style="text-align:right">式を解くのではなく、可動範囲を41点で走査して<br>目標と交わる点を拾い、その周りを24回二分して詰めます<br>（GLは応答が単調でないため）</b></div>
     <div class="kv"><span>実績範囲の外</span><b style="text-align:right">境界での傾きを直線で延長（案分）します。<br>実データの効きと向きが合わないときは延長しません</b></div>
-    <div class="kv"><span>精度</span><b style="text-align:right">両面合計の平均絶対誤差 <b>GI 6.62 / GL 2.54 g/m²</b></b></div>
+    <div class="kv"><span>精度（時系列検証）</span><b style="text-align:right">未知のコイルに対する両面合計の平均絶対誤差<br>
+      <b>GI 6.7（最悪月 6.9） / GL 3.2（最悪月 4.2）g/m²</b><br>
+      月ごとに「その月より前だけで学習して、その月を当てる」検証です</b></div>
+    <div class="kv"><span>同じ期間で測ると</span><b style="text-align:right">GI 5.1 / GL 1.9 g/m² まで下がりますが、<br>
+      これは学習に使った期間での値で、<b>実力ではありません</b></b></div>
+    <div class="kv"><span>GLで残差モデルは効いているか</span><b style="text-align:right">学習期間内では 中央値のみ 2.71 → 1.85 g/m² と改善しますが、<br>
+      <b>学習に使っていない期間では改善が確認できていません</b><br>
+      （中央値のみ 2.74 / 残差あり 2.89 g/m²）。<br>
+      GLの予測は<b>実質「付着量記号ごとの実績中央値」</b>とみなすのが安全です</b></div>
     <div class="note plain" style="margin-top:8px">
       <b>この方式の限界。</b>過去にあった条件の組合せの「間を埋める」ことしかできません。
       圧力・流量・Yノズル位置は実機でたがいに連動して動かされてきたため、
       1つだけ動かした結果は<b>因果効果ではありません</b>。実績にない領域は当たりません。
     </div>
 
-    <div class="mechhead phys">理論モード ─ 液膜の力学と噴流の相関式</div>
+    <div class="mechhead phys">理論モデル ─ 液膜の力学と噴流の相関式</div>
     <div class="kv"><span>種類</span><b style="text-align:right">1次元の薄膜方程式＋衝突噴流の実験相関<br><b>実績データは一切使いません</b></b></div>
     <div class="kv"><span>計算の順序</span><b style="text-align:right">プレナム圧 → ノズル出口速度（等エントロピー膨張・チョーク判定）<br>→ 鋼板面の圧力分布 p(x) とせん断応力 τ(x)<br>→ 液膜の流束式 → 膜厚 → 密度を掛けて付着量</b></div>
     <div class="kv"><span>中心の式</span><b style="text-align:right"><code>Q(H) = H + S H²/2 − G H³/3</code><br>膜厚 <code>H* = [S + √(S²+4G)] / 2G</code><br>実際の流束は最小の断面で決まる <code>Q<sub>w</sub> = min<sub>x</sub> Q<sub>max</sub>(x)</code></b></div>
@@ -819,9 +834,9 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
     </div>
 
     <div class="note info">
-      <b>使い分け。</b>実機GI/GLの条件を決めるときは<b>実機モード</b>。
-      実績に無い条件（ガス種・ノズルすき間の変更、実績範囲の外）を検討したいときだけ<b>理論モード</b>。
-      理論モードの「条件設計」タブには実機モードの条件を取り込むボタンがあり、
+      <b>使い分け。</b>実機GI/GLの条件を決めるときは<b>実績モデル</b>。
+      実績に無い条件（ガス種・ノズルすき間の変更、実績範囲の外）を検討したいときだけ<b>理論モデル</b>。
+      理論モデルの「条件設計」タブには実績モデルの条件を取り込むボタンがあり、
       2つの答えを並べて確かめられます。
     </div>
   </div>
@@ -829,8 +844,12 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   <div class="card">
     <h2>結果をどう扱うか</h2>
     <div class="note warn" style="margin-top:0">
-      予測の平均的な外れ幅は <b>GI ±6.6 g/m²、GL ±2.5 g/m²</b>（両面合計）です。
-      画面には毎回この参考誤差を表示しています。
+      未知のコイルに対して期待できる外れ幅は、時系列検証で
+      <b>GI 平均 6.7 g/m²（10件に1件は ±15 g/m² 以上）、GL 平均 3.2 g/m²（同 ±7 g/m² 以上）</b>です。
+      画面には毎回この参考誤差を表示しています。<br>
+      <b>平均誤差は個々の予測の信頼区間ではありません。</b>
+      「差が平均誤差より小さいから変えなくてよい」とは言えません。
+      このアプリが言えるのは<b>「モデルがその差を判別できるかどうか」</b>までです。
     </div>
     <div class="note plain">
       このモデルは <b>過去実績の統計的な内挿</b> です。実績にある条件の組合せに近いほど当たり、
@@ -898,7 +917,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   </details>
 
   <div class="disclaimer">
-    実機モデルは過去実績の統計的補間です。設備条件を独立に動かしたときの因果効果を保証するものではありません。
+    実績モデルは過去実績の統計的補間です。設備条件を独立に動かしたときの因果効果を保証するものではありません。
   </div>
 </div>
 
@@ -970,15 +989,21 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <div id="tab-design" class="tab-content">
 
   <details id="howto">
-    <summary>はじめに：理論モードの使い分け</summary>
+    <summary>はじめに：理論モデルの使い分け</summary>
     <div class="body">
       <div class="note warn" style="margin-top:0">
-        <b>理論モードは文献ベースの物理モデルです。</b>実機の実績データは使っていません。
-        実機GI/GLの条件を決めるときは <b>実機モード</b> を使ってください。
+        <b>理論モデルは文献ベースの物理モデルです。</b>実機の実績データは使っていません。
+        実機GI/GLの条件を決めるときは <b>実績モデル</b> を使ってください。
         こちらは、実績データに無い条件（ガス種・ノズルすき間の変更など）や、
         実績範囲の外を検討したいときに使います。<br>
-        <b>GL（ガルバリウム）には適用できません。</b>浴温が約600℃で、この物理モデルが前提とする
-        溶融亜鉛（420〜500℃）の物性域から外れるためです。
+        <b>GL（ガルバリウム）には適用できません。</b>理由は浴温だけではありません。
+        <b>①浴組成</b>が Zn-55%Al-1.6%Si で、モデルが持つ物性は純亜鉛系のものです。
+        <b>②液体物性</b>（粘度・密度・表面張力）の温度依存式が溶融亜鉛（420〜500℃）で
+        当てはめたもので、約600℃・高Al組成には外挿になります。
+        <b>③凝固挙動</b>が違い、GLは初晶Alデンドライトが広い温度幅で晶出するため、
+        ワイピング後の膜が「一定粘度の液膜のまま持ち上がる」という前提が成り立ちません。
+        <b>④酸化被膜</b>の性状も Al 系で異なります。
+        以上のいずれもモデルに入っていないため、GLの計算値は使わないでください。
       </div>
       <div class="kv"><span><b>条件設計</b>（このタブ）</span><b style="text-align:right">すき間・速度・浴温・板幅・ガス種を固定し、<br>目標めっき付着量を出す「噴射圧力」と「ノズル距離」を求める</b></div>
       <div class="kv"><span><b>かんたん</b></span><b style="text-align:right">速度もすき間も未定のとき。ガス種・板幅・目標めっき付着量だけで<br>条件一式をまるごと提案する</b></div>
@@ -991,10 +1016,10 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
     <h2><span class="step-tag">1</span>いま変えられない条件</h2>
     <p class="sub">設備・製品側で決まっている条件を入力します。これを固定したまま、目標めっき付着量を出すための <b>噴射圧力</b> と <b>ノズル距離</b> を計算します。</p>
     <button class="btn btn-sub" id="import-ml-btn" onclick="importFromMl()">
-      実機モードの条件を取り込む
+      実績モデルの条件を取り込む
     </button>
     <div class="note plain" id="import-ml-note" style="margin-top:8px">
-      実機モードで選んでいる <b>通板速度・板幅・ポット温度・目標付着量</b> をこの画面へ写します。
+      実績モデルで選んでいる <b>通板速度・板幅・ポット温度・目標付着量</b> をこの画面へ写します。
       ノズルすき間とガス種は設備仕様なのでそのままです。
     </div>
     <div id="fixed-fields"></div>
@@ -1015,7 +1040,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   <div id="design-out" style="margin-top:12px"></div>
 
   <div class="card" id="mode-compare-card">
-    <h2>実機モードとくらべる</h2>
+    <h2>実績モデルとくらべる</h2>
     <p class="sub">
       同じ操業条件について、<b>実績から学んだモデル</b>と<b>物理式</b>が何を答えたかを並べます。
       2つが近ければ、その条件は物理的にも実績的にも無理がないと判断できます。
@@ -1251,12 +1276,26 @@ async function busy(msg, task){
   catch(err){ console.error(err); toast('計算に失敗しました: ' + err.message); throw err; }
   finally { hideOverlay(); }
 }
-async function py(fn, payload){
-  pyodide.globals.set('_arg', payload===undefined ? null : JSON.stringify(payload));
-  const src = payload===undefined ? `_api.${fn}()` : `_api.${fn}(_arg)`;
-  const data = JSON.parse(await pyodide.runPythonAsync(src));
-  if (!data.ok) throw new Error(data.error);
-  return data;
+/* Python 呼び出しは必ず1件ずつ実行する。
+
+   引数は Pyodide の共有グローバル `_arg` に置いて渡している。呼び出しが重なると、
+   先の呼び出しが `_arg` を読む前に後の呼び出しが上書きしてしまい、
+   別の関数の引数で実行される（起動時に条件設計と装置画面が同時に走ると
+   「ライン区分は GI または GL を指定してください」で落ちていた）。
+   Pyodide はどのみち同じスレッドで動くので、直列化しても遅くならない。 */
+let _pyQueue = Promise.resolve();
+function py(fn, payload){
+  const run = async () => {
+    pyodide.globals.set('_arg', payload===undefined ? null : JSON.stringify(payload));
+    const src = payload===undefined ? `_api.${fn}()` : `_api.${fn}(_arg)`;
+    const data = JSON.parse(await pyodide.runPythonAsync(src));
+    if (!data.ok) throw new Error(data.error);
+    return data;
+  };
+  // 前の呼び出しが失敗しても、次の呼び出しは実行する
+  const result = _pyQueue.then(run, run);
+  _pyQueue = result.then(() => {}, () => {});
+  return result;
 }
 function saveState(){
   try{
@@ -1441,16 +1480,18 @@ function switchTab(name){
 }
 
 /* ==================================================================
-   実機モード（実績データ由来モデル）
+   実績モデル（実績データ由来モデル）
 ================================================================== */
 let mlBoot = null;
+//: 条件の初期値が入り終わったか。起動直後にタブを開かれても空の条件で計算しないための目印。
+let mlReady = false;
 let mlDesignResult = null;
 
 const mlState = {
   // 初回は使い方タブから。2回目以降は前回開いていたタブを localStorage から復元する。
   mode: 'ml', tab: 'mlhelp',
   line: 'GI', code: 'Z08', target: null,
-  cond: {},      // 条件設計タブの条件（実機モードの基準）
+  cond: {},      // 条件設計タブの条件（実績モデルの基準）
   compare: {},   // 条件比較タブの「変更後」
 };
 
@@ -1513,7 +1554,7 @@ function buildMlSelect(){
       <select onchange="onMlLineChange(this.value)">${lineOpts}</select>
     </div>
     <div class="selrow">
-      <div class="fl"><b>めっき付着量記号</b><span>${stats ? `実績 ${stats.n} 件・両面合計の中央値 ${stats.CH_median} g/m²` : ''}</span></div>
+      <div class="fl"><b>めっき付着量記号</b><span>${stats ? `${stats.n ? `実績 ${stats.n} 件・` : ''}両面合計の中央値 ${stats.CH_median} g/m²` : ''}</span></div>
       <select onchange="onMlCodeChange(this.value)">${codeOpts}</select>
     </div>`;
 }
@@ -1893,7 +1934,7 @@ function mlPredCard(r, target, title){
       <div><div class="lab">裏面平均 CG</div><div class="num">${fmt(r.CG_pred_g_m2,1)}</div></div>
     </div>
     <div class="kv" style="margin-top:10px"><span>入力の位置づけ</span><b>${mlStatusPill(r.range_status)}</b></div>
-    <div class="kv"><span>参考誤差（${r.line}・両面合計）</span><b>MAE ${fmt(err.CH_MAE,2)} / P90 ${fmt(err.CH_P90,1)} g/m²</b></div>
+    <div class="kv"><span>参考誤差（${r.line}・両面合計・時系列検証）</span><b>平均 ${fmt(err.CH_MAE,1)} ／ 10件に1件は ±${fmt(err.CH_P90,1)} 超 g/m²</b></div>
     <div class="kv"><span>両面直接モデルとの差</span><b>${fmt(r.CH_direct_minus_sum_g_m2,2)} g/m²</b></div>
     ${(r.warnings||[]).length ? `<div class="note warn" style="margin-top:10px">${r.warnings.map(esc).join('<br>')}</div>` : ''}
   </div>`;
@@ -1953,12 +1994,22 @@ function renderMlDesign(d){
   if (d.status !== 'infeasible') html += mlAnswerCard(d);
   const cls = d.status==='ok' ? 'ok' : 'warn';
   html += `<div class="note ${cls}"><b>${esc(d.message)}</b></div>`;
+  // 統計的な所見（差を判別できるか）と、操業上の判断は分けて出す
+  if (d.resolution){
+    const lv = d.resolution.level;
+    html += `<div class="note ${lv==='above_p90'?'info':'plain'}">
+      <b>この差はモデルで判別できるか</b><br>${esc(d.resolution.statement)}</div>`;
+  }
+  if (d.operational_caution){
+    html += `<div class="note warn"><b>操業上の判断</b><br>${esc(d.operational_caution)}</div>`;
+  }
   if (d.sample_warning) html += `<div class="note warn">${esc(d.sample_warning)}</div>`;
   html += mlPredCard(d.current, d.target_ch_gm2, 'いまの条件のままだと');
 
   if (d.proposals && d.proposals.length){
     html += `<div class="card"><h3>変更の提案</h3>
-      <p class="sub">効きの大きい順に、Yノズル位置 → 通板速度 → ノズル圧力 の順で1項目ずつ試しています。</p>`;
+      <p class="sub">Yノズル位置 → 通板速度 → ノズル圧力 の順で1項目ずつ試しています。
+      <b>この順番は操業上の取り決め</b>で、モデルが決めた優先順位ではありません。</p>`;
     d.proposals.forEach((p, i) => {
       if (!p.found){
         // 「届かなかった」と「実績から効果を特定できず使えない」を区別する
@@ -2033,7 +2084,7 @@ function renderHmiScreen(d){
 
     <div class="legend">
       <span><span class="tag proc">実績</span> 実績値をそのまま</span>
-      <span><span class="tag model">予測</span> 実機モデルの出力</span>
+      <span><span class="tag model">予測</span> 実績モデルの出力</span>
       <span><span class="tag derived">導出</span> 実績値から計算</span>
       <span><span class="tag none">未取得</span> 再現できない項目</span>
       <span><span class="tag unv">未確認</span> 画面との対応が未確定</span>
@@ -2104,8 +2155,10 @@ function renderHmiScreen(d){
 
 let _mlPredictBusy = false;
 async function runMlPredict(){
-  // タブを速く切り替えると呼び出しが重なる。条件が入る前や二重起動では走らせない。
-  if (!mlBoot || !mlState.cond.line || _mlPredictBusy) return;
+  // 起動直後、条件の読み込みが終わる前にタブが開かれることがある。
+  // そのまま呼ぶと空の条件がPythonへ渡って例外になるので、準備完了まで走らせない。
+  // 二重起動も止める（タブを速く切り替えたときに呼び出しが重なる）。
+  if (!mlReady || !mlBoot || !mlState.cond.line || _mlPredictBusy) return;
   _mlPredictBusy = true;
   let data, curves;
   try {
@@ -2160,7 +2213,7 @@ function resizePlot(id){
   if (el && el.offsetWidth && el.querySelector('.main-svg')) { try { Plotly.Plots.resize(el); } catch(e){} }
 }
 
-/* 理論モード側のグラフ一式。こちらも同じ理由で明示的に追従させる。 */
+/* 理論モデル側のグラフ一式。こちらも同じ理由で明示的に追従させる。 */
 const PHYS_PLOT_IDS = ['plot-p','plot-z','plot-v','plot-map',
                        'plot-pressure','plot-shear','plot-film','plot-scatter','plot-hist'];
 function resizeAllPlots(){
@@ -2274,8 +2327,9 @@ function renderMlCompare(c){
   const sign = v => (v>=0?'+':'') + fmt(v,1);
   const d = c.delta_ch_gm2;
   const pct = c.before.CH_sum_pred_g_m2 ? d / c.before.CH_sum_pred_g_m2 * 100 : 0;
-  const err = (mlBoot.error_reference[c.before.line] || {}).CH_MAE || 0;
-  // 差がモデルの平均誤差より小さければ「差とは言えない」。ここを黙って見せると誤読する。
+  const ref = mlBoot.error_reference[c.before.line] || {};
+  const err = ref.CH_MAE || 0, p90 = ref.CH_P90 || err * 2;
+  // 平均誤差は信頼区間ではない。ここで言えるのは「モデルがこの差を判別できるか」まで。
   const meaningful = Math.abs(d) > err;
   const dir = d > 0 ? '増えます' : d < 0 ? '減ります' : '変わりません';
   let html = `<div class="cmpresult ${d>0?'up':d<0?'down':''}">
@@ -2284,8 +2338,10 @@ function renderMlCompare(c){
     <div class="s">${fmt(c.before.CH_sum_pred_g_m2,1)} → <b>${fmt(c.after.CH_sum_pred_g_m2,1)}</b> g/m²
       ／ ${fmt(Math.abs(pct),1)}% ${dir}</div>
     <div class="j ${meaningful?'ok':'weak'}">${meaningful
-      ? `この差はモデルの平均誤差（${fmt(err,1)} g/m²）より大きく、意味のある差として扱えます。`
-      : `この差はモデルの平均誤差（${fmt(err,1)} g/m²）より小さいため、<b>差があるとは言い切れません</b>。`}</div>
+      ? `この差はモデルの平均絶対誤差（${fmt(err,1)} g/m²）より大きく、向きは参考になります。`
+        + `ただし予測の10件に1件は ±${fmt(p90,1)} g/m² 以上外れるため、値は幅を持って読んでください。`
+      : `この差はモデルの平均絶対誤差（${fmt(err,1)} g/m²）より小さく、<b>モデルはこの大きさの差を判別できません</b>。`
+        + `実機で差が出るかどうかは、このツールでは判断できません。`}</div>
   </div>`;
 
   if (c.diffs.length){
@@ -2331,12 +2387,12 @@ async function runDesign(){
   $('design-out').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-/* ---------- 実機モードの条件を理論モードへ写す ---------- */
+/* ---------- 実績モデルの条件を理論モデルへ写す ---------- */
 /* 写すのは両モードで意味が同じ4項目だけ。Yノズル位置は設備座標であって
    ノズル〜鋼板の実距離とは確認できていないため、距離としては写さない。 */
 function importFromMl(){
   if (!mlBoot || !mlState.cond || !mlState.cond.line){
-    toast('先に実機モードで条件を選んでください'); return;
+    toast('先に実績モデルで条件を選んでください'); return;
   }
   const c = mlState.cond;
   const clamp = (key, v) => Math.min(FIELDS[key].max, Math.max(FIELDS[key].min, v));
@@ -2349,16 +2405,16 @@ function importFromMl(){
   }
   if (mlState.line === 'GL'){
     notes.push('<b>GLの浴温（約600℃）は写していません。</b>この物理モデルは溶融亜鉛（420〜500℃）の'
-             + '物性域が前提で、ガルバリウムには適用できません。理論モードの結果は参考になりません。');
+             + '物性域が前提で、ガルバリウムには適用できません。理論モデルの結果は参考になりません。');
   } else if (isFinite(c['使用ポット温度_C'])){
     state.fixed.bath_temp_c = clamp('bath_temp_c', c['使用ポット温度_C']);
   }
   notes.push('ノズルすき間とガス種は実績データに無いため、この画面の値のままです。');
   buildInputs();
   saveState();
-  $('import-ml-note').innerHTML = `実機モード（${esc(mlState.line)} / ${esc(mlState.code)}）から取り込みました。<br>`
+  $('import-ml-note').innerHTML = `実績モデル（${esc(mlState.line)} / ${esc(mlState.code)}）から取り込みました。<br>`
     + notes.join('<br>');
-  toast('実機モードの条件を取り込みました');
+  toast('実績モデルの条件を取り込みました');
   runDesign();
 }
 
@@ -2379,16 +2435,16 @@ async function renderModeCompare(){
   const out = $('mode-compare-out');
   if (!out) return;
   if (!mlBoot || !mlState.cond || !mlState.cond.line){
-    out.innerHTML = `<div class="note plain">実機モードで条件を選ぶと、ここに比較が出ます。</div>`;
+    out.innerHTML = `<div class="note plain">実績モデルで条件を選ぶと、ここに比較が出ます。</div>`;
     return;
   }
   if (!designResult || !designResult.candidates || !designResult.candidates.length){
-    out.innerHTML = `<div class="note plain">上の「計算する」を押すと、実機モードとの比較がここに出ます。</div>`;
+    out.innerHTML = `<div class="note plain">上の「計算する」を押すと、実績モデルとの比較がここに出ます。</div>`;
     return;
   }
   let ml;
   try { ml = (await py('ml_predict', mlState.cond)).prediction; }
-  catch(e){ console.error(e); out.innerHTML = `<div class="note warn">実機モデルの予測を取得できませんでした。</div>`; return; }
+  catch(e){ console.error(e); out.innerHTML = `<div class="note warn">実績モデルの予測を取得できませんでした。</div>`; return; }
 
   const c = designResult.candidates[0];
   const physBoth = c.predicted_cw_gm2 * 2;
@@ -2407,23 +2463,35 @@ async function renderModeCompare(){
 
   const verdict = Math.abs(gap) <= band
     ? {cls:'ok', text:`差 ${fmt(Math.abs(gap),1)} g/m² は、両モデルの誤差を足した幅（約 ${fmt(band,1)} g/m²）の内側です。`
-        + `<b>2つの見立ては矛盾していません。</b>ただし誤差幅が広いので、一致の証明にはなりません。`}
+        + `<b>2つの見立ては矛盾していません。</b>ただしこれは「正しい」「物理的に妥当」を意味しません。`
+        + `2つのモデルは<b>どちらも同じ要因を含んでいない</b>（下記）ため、`
+        + `そろって同じ向きに外れている可能性があります。`}
     : {cls:'warn', text:`差 ${fmt(Math.abs(gap),1)} g/m² は、両モデルの誤差を足した幅（約 ${fmt(band,1)} g/m²）を超えています。`
-        + `理論モードは実機のノズル形状・すき間・板端の流れを含みません。`
-        + `<b>実機の条件決定には実機モードの値を使ってください。</b>`};
+        + `理論モデルは実機のノズル形状・すき間・板端の流れを含みません。`
+        + `<b>実機の条件決定には実績モデルの値を使ってください。</b>`};
   const glWarn = mlState.line === 'GL'
-    ? `<div class="note bad"><b>GLでは理論モードの数値を使わないでください。</b>
-         浴温が約600℃のガルバリウムは、この物理モデルが前提とする溶融亜鉛（420〜500℃）の
-         物性域から外れています。ここでの比較は成立しません。</div>` : '';
+    ? `<div class="note bad"><b>GLでは理論モデルの数値を使わないでください。</b>
+         ガルバリウムは浴組成（Zn-55%Al-1.6%Si）・浴温（約600℃）・凝固挙動のいずれも、
+         この物理モデルが前提とする溶融亜鉛（420〜500℃・純亜鉛系物性）から外れています。
+         ここでの比較は成立しません。</div>` : '';
 
   out.innerHTML = glWarn + `<div class="tbl-wrap"><table class="cmp2"><thead><tr>
-      <th>項目</th><th>実機モード</th><th>理論モード</th><th>差（理論−実機）</th>
+      <th>項目</th><th>実績モデル</th><th>理論モデル</th><th>差（理論−実機）</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     <div class="note ${verdict.cls === 'ok' ? 'info' : 'warn'}">${verdict.text}</div>
     <div class="note plain">
-      実機モードは <b>${esc(mlState.line)} / ${esc(mlState.code)}</b> の条件、
-      理論モードは <b>ノズルすき間 ${fmt(state.fixed.nozzle_gap_mm,2)} mm・${state.fixed.gas_type==='air'?'空気':'窒素'}</b> での計算です。
+      実績モデルは <b>${esc(mlState.line)} / ${esc(mlState.code)}</b> の条件、
+      理論モデルは <b>ノズルすき間 ${fmt(state.fixed.nozzle_gap_mm,2)} mm・${state.fixed.gas_type==='air'?'空気':'窒素'}</b> での計算です。
       ノズルすき間とガス種は実績データに無いため、理論側の仮定になります。
+    </div>
+    <div class="note warn">
+      <b>どちらのモデルにも入っていない実機の変動要因</b><br>
+      ノズルリップの摩耗・変形／スリットの詰まり・付着／鋼帯のばたつき（フラッター）／
+      板幅方向の噴流の回り込み（エッジオーバーコート）／浴中のドロス量とAl濃度／
+      ロール類の偏摩耗／X線付着量計そのものの誤差と校正ずれ／
+      条件を記録した時刻と実際にワイピングされた位置との搬送遅れ。<br>
+      2つのモデルが近い値を出しても、これらの要因は<b>どちらも見ていません</b>。
+      実機で確かめるまでは、あくまで事前検討の目安として扱ってください。
     </div>`;
 }
 
@@ -3203,7 +3271,7 @@ async function installModelFiles(){
   const files = ['manifest.json', 'reference.json',
     'GI_CF.json', 'GI_CG.json', 'GI_CH.json', 'GL_CF.json', 'GL_CG.json', 'GL_CH.json'];
   pyodide.FS.mkdirTree('/models');
-  // 実機モデルは合計約1.8MB。並列に取得してから書き込む。
+  // 実績モデルは合計約1.8MB。並列に取得してから書き込む。
   const texts = await Promise.all(files.map(f => fetch('models/' + f).then(r => r.text())));
   files.forEach((f, i) => pyodide.FS.writeFile('/models/' + f, texts[i]));
 }
@@ -3256,12 +3324,13 @@ import gaswipelab.web_api as _api
   dz.addEventListener('dragleave', () => dz.classList.remove('over'));
   dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); loadCSV(e.dataTransfer.files[0]); });
 
-  // 実機モードを既定にする。保存済みの記号があればそれを復元する。
+  // 実績モデルを既定にする。保存済みの記号があればそれを復元する。
   if (!mlBoot.lines[mlState.line]) mlState.line = Object.keys(mlBoot.lines)[0];
   if (!mlBoot.lines[mlState.line].codes[mlState.code]){
     mlState.code = Object.keys(mlBoot.lines[mlState.line].codes).sort()[0];
   }
   await loadMlDefaults(true);
+  mlReady = true;
   switchMode(mlState.mode === 'phys' ? 'phys' : 'ml');
   if (mlState.mode === 'phys') await runDesign();
   else await runMlDesign(true);

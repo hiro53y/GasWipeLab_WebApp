@@ -1,11 +1,11 @@
 """実機YG装置監視画面の再現。
 
-実績データ由来の条件と実機モデルの予測を、実機HMIと同じ並びの構造化データへ組み替える。
+実績データ由来の条件と実績モデルの予測を、実機HMIと同じ並びの構造化データへ組み替える。
 ここでは推論を一切行わない（渡された予測結果をそのまま配置するだけ）。
 
 各値には次を必ず添える:
     source     : proc    実績データに実在する項目から取得
-                 model   実機モデルの予測値
+                 model   実績モデルの予測値
                  derived 実績値から算術的に導出（新しい仮定は置かない）
                  none    該当する記録が無く再現できない（未取得）
     confidence : confirmed  実データ照合で対応が確定
@@ -77,8 +77,8 @@ def build_screen(condition: dict[str, Any], prediction: dict[str, Any] | None = 
 
     Parameters
     ----------
-    condition : 実機モードで使っている正準名の条件
-    prediction : 実機モデルの予測結果（`GasWipingPredictor.predict` の戻り値）
+    condition : 実績モデルで使っている正準名の条件
+    prediction : 実績モデルの予測結果（`GasWipingPredictor.predict` の戻り値）
     modes : 制御モードの状態。取得できていなければ None
     """
     thickness = _num(condition, "製品板厚_mm")

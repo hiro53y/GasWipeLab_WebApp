@@ -1,0 +1,8 @@
+# Python のバイトコード。配布にもアプリの動作にも不要（Pyodide は .py を直接読む）。
+__pycache__/
+*.py[cod]
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
+*.swp
