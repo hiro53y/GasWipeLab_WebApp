@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GasWipeLab">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>GasWipeLab v4.3 — ワイピング条件設計</title>
+<title>GasWipeLab v4.4 — ワイピング条件設計</title>
 <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <style>
@@ -443,7 +443,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <!-- ============ loading ============ -->
 <div id="loading">
   <div class="spinner"></div>
-  <h1>GasWipeLab v4.3</h1>
+  <h1>GasWipeLab v4.4</h1>
   <div id="load-status">初期化中…（初回のみ 30 秒ほどかかります）</div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:4%"></div></div>
 </div>
@@ -454,7 +454,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <header class="app" id="app-header" style="display:none">
   <div>
     <div class="logo">GasWipeLab</div>
-    <div class="ver">ワイピング条件 事前設定ツール v4.3</div>
+    <div class="ver">ワイピング条件 事前設定ツール v4.4</div>
   </div>
   <div class="spacer"></div>
   <button class="cal-badge" id="cal-badge" onclick="switchTab('calib')">未校正</button>
@@ -480,6 +480,9 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   <button class="nav-btn" id="nav-calib" onclick="switchTab('calib')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20h-2M2 20h2"/><circle cx="10" cy="4" r="1.6"/></svg>実績校正
   </button>
+  <button class="nav-btn" id="nav-modecmp" onclick="switchTab('modecmp')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M7 7 4 12l3 5M17 7l3 5-3 5"/></svg>モデル比較
+  </button>
 </nav>
 
 <nav class="bottom" id="app-nav-ml" style="display:none">
@@ -494,6 +497,9 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   </button>
   <button class="nav-btn" id="nav-mlcompare" onclick="switchTab('mlcompare')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v18M16 3v18M3 8h18M3 16h18"/></svg>条件比較
+  </button>
+  <button class="nav-btn" id="nav-modecmp-ml" onclick="switchTab('modecmp')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M7 7 4 12l3 5M17 7l3 5-3 5"/></svg>モデル比較
   </button>
 </nav>
 
@@ -590,6 +596,12 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
           記号を選んだ時点で、その記号を過去に作ったときの標準条件が全部入っています。
           つまり<b>何も触らなくても「いつもの条件」が表示されている</b>状態です。
           そこから目標や決まっている条件だけを変えてください。</div>
+        <div class="g"><span class="t">板厚・板幅を変えたとき</span>
+          手順1で板厚・板幅を変えると、<b>手順3の通板速度も、そのサイズの実績に入れ替わります</b>。
+          板厚と速度は実績で強く連動しているためです（相関 GI −0.86／GL −0.69）。
+          手順3に<b>「実績 何件の中央値を入れたか」</b>が出るので、根拠を確認できます。
+          生産計画で速度が決まっているときは、そのまま上書きするか
+          <b>「元の値に戻す」</b>を押してください。</div>
         <div class="g"><span class="t">「変更不要」と出たら</span>
           目標と予測の差が<b>モデルの平均誤差より小さい</b>ということです。
           それ以上追い込んでも意味がないので、条件はそのままで構いません。</div>
@@ -657,7 +669,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
         <div class="g"><span class="t">実績モデルとつなぐ</span>
           <b>「実績モデルの条件を取り込む」</b>ボタンで、通板速度・板幅・浴温・目標を写せます。
           目標は<b>両面合計→片面に自動換算</b>されます。
-          そのあと下に<b>実績モデルとの比較表</b>が出ます。</div>
+          2つのモデルの答えを並べて見たいときは <b>⑧モデル比較</b> タブを使ってください。</div>
         <div class="g"><span class="t">注意</span>
           目標は<b>片面</b>です（実績モデルは両面合計）。
           Yノズル位置は写しません。実機は設備座標、理論はノズル先端からの実距離で、
@@ -693,6 +705,30 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
         <div class="g"><span class="t">使う場面</span>
           理論モデルを本格的に使う前に一度。以降の理論モデルの精度が上がります。</div>
       </div>
+    </div></details>
+
+    <div class="mechhead">2つのモデルを見くらべる</div>
+
+    <details class="kb"><summary>⑧ モデル比較 ── 実績モデルと理論モデルの答えを並べる</summary><div>
+      <div class="guide">
+        <div class="g"><span class="t">何をする画面か</span>
+          実績モデルの条件設計で選んでいる条件を理論モデルへ写し、
+          <b>2つのモデルが同じ条件で何と答えるか</b>を1つの表に並べます。
+          どちらのモードのメニューからも開けます。</div>
+        <div class="g"><span class="t">使う場面</span>
+          実績モデルの提案が妥当か、物理式の側からも裏が取れるか確かめたいとき。
+          成り立ちの違う2つが近い答えなら、その条件に無理が無いことの<b>傍証</b>になります。</div>
+        <div class="g"><span class="t">結果の読み方</span>
+          <b>差が「両モデルの誤差を足した幅」の内側なら、2つの見立ては矛盾していません。</b>
+          ただしこれは<b>「正しい」という意味ではありません</b>。
+          ノズル摩耗や板のばたつきなど、どちらのモデルも見ていない要因があり、
+          そろって同じ向きに外れている可能性があります。</div>
+        <div class="g"><span class="t">注意</span>
+          <b>そろえられない条件があります。</b>ノズル位置は基準が違い、ノズル圧力は測定点が同じか
+          確認できていないため写しません。ノズルすき間とガス種は実績データに無く、理論側の仮定です。
+          <b>GLでは理論モデルそのものが使えない</b>ため、比較は成立しません。</div>
+      </div>
+      <button class="chip" onclick="switchTab('modecmp')">モデル比較を開く</button>
     </div></details>
   </div>
 
@@ -883,7 +919,10 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 
   <div class="card">
     <h2><span class="step-tag">1</span>何を作るか</h2>
-    <p class="sub">付着量記号を選ぶと、その記号の <b>実績中央値</b> がすべての初期値に入ります。</p>
+    <p class="sub">
+      付着量記号を選ぶと、その記号の <b>実績中央値</b> がすべての初期値に入ります。<br>
+      <b>板厚・板幅を変えると、そのサイズの実績にあわせて通板速度（手順3）も入れ替わります。</b>
+    </p>
     <div id="ml-select"></div>
     <div id="ml-product"></div>
   </div>
@@ -898,6 +937,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   <div class="card">
     <h2><span class="step-tag">3</span>動かせない条件</h2>
     <p class="sub">生産計画などで先に決まっている条件があれば、ここで合わせてください。</p>
+    <div id="ml-speed-note"></div>
     <div id="ml-fixed"></div>
   </div>
 
@@ -1046,10 +1086,10 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   <div class="card" id="mode-compare-card">
     <h2>実績モデルとくらべる</h2>
     <p class="sub">
-      同じ操業条件について、<b>実績から学んだモデル</b>と<b>物理式</b>が何を答えたかを並べます。
-      2つが近ければ、その条件は物理的にも実績的にも無理がないと判断できます。
+      同じ操業条件について、<b>実績から学んだモデル</b>と<b>物理式</b>が何を答えたかを並べる機能は
+      <b>「モデル比較」タブ</b>に移しました。
     </p>
-    <div id="mode-compare-out"></div>
+    <button class="btn btn-ghost" onclick="switchTab('modecmp')">モデル比較タブを開く</button>
   </div>
 
   <div class="disclaimer">本ツールの結果は実機保証値ではありません。事前設定・条件検討の目安として使用してください。</div>
@@ -1085,6 +1125,18 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 ================================================================= -->
 <div id="tab-check" class="tab-content">
 
+  <div class="note info" style="margin-top:0">
+    <b>このタブは「決めた条件を1つずつ揺らして、余裕があるかを見る」ための画面です。</b><br>
+    上から順に読んでください。
+    <b>①予測結果</b>＝目標に届くか →
+    <b>②リスク判定</b>＝飛散などの危険が無いか →
+    <b>③1項目だけ動かしたとき</b>＝どの条件のブレに弱いか →
+    <b>④マップ</b>＝どの運転点を選ぶか。<br>
+    ここは<b>理論モデル（物理式）だけ</b>の計算です。実績から学んだモデルの答えと見くらべるときは
+    <button class="chip" style="margin-top:6px" onclick="switchTab('modecmp')">モデル比較タブ</button>
+    を使ってください。
+  </div>
+
   <div class="card">
     <h2>この条件で本当に大丈夫か確かめる</h2>
     <p class="sub">
@@ -1102,21 +1154,41 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   </div>
 
   <div class="card">
-    <h2>予測結果</h2>
+    <h2>① 予測結果</h2>
+    <p class="sub">
+      <b>読み方</b>：大きく出ている数字は <b>片面</b> のめっき付着量です（実績モデル側は両面合計なので、
+      くらべるときは2倍してください）。<br>
+      <b>適正／未達／過剰</b> は達成率だけで決めています ── <b>90%未満＝未達・110%超＝過剰・その間＝適正</b>。<br>
+      <b>推定範囲</b> は下の「推定ばらつき ±%」を付着量に掛けた幅です。実測のばらつきではありません。
+    </p>
     <div id="check-result"><p class="sub">「再計算する」を押してください。</p></div>
   </div>
 
   <div class="card">
-    <h2>リスク判定</h2>
-    <p class="sub">操業前に確認すべき3点です。</p>
+    <h2>② リスク判定</h2>
+    <p class="sub">
+      <b>読み方</b>：<b>①スプラッシュ</b> が実際の操業リスクです。We/We* が <b>1.0 を超えたら飛散域</b>なので、
+      ここだけは必ず 1.0 未満に収めてください。<br>
+      <b>③Mach 数</b>が 1 に達する（チョーク）と、それ以上は圧力を上げても噴流が速くなりません。
+    </p>
     <div id="check-risk"></div>
+    <div class="note warn">
+      <b>「モデル信頼度」と「推定ばらつき ±%」は、実測との誤差ではありません。</b>
+      文献の適用条件からどれだけ外れているかを点数化した<b>見積り</b>です
+      （基準 ±12% から出発し、ノズルが遠い・付着量が 75 g/m² 超・チョーク・Mach 0.8 超・
+      飛散域・浴温 450℃ 未満といった条件ごとに幅を足す。合計 18% 以下＝高／30% 以下＝中／それ超＝低）。<br>
+      実績データと突き合わせて測った誤差は、<b>実績モデル側</b>の値
+      （GI 6.7 / GL 3.2 g/m²・両面合計）です。<b>この2つは別物なので足したり比べたりしないでください。</b>
+    </div>
   </div>
 
   <div class="card">
-    <h2>1項目だけ動かしたときのめっき付着量</h2>
+    <h2>③ 1項目だけ動かしたときのめっき付着量</h2>
     <div class="plot-help">
       縦軸はすべて <b>片面めっき付着量 [g/m²]</b>。<span style="color:#B91C1C;font-weight:700">赤い破線</span> が目標値、
-      <span style="font-weight:700">●</span> がいまの条件です。線が急なほど、その項目のブレがめっき付着量に効きます。
+      <span style="font-weight:700">●</span> がいまの条件です。線が急なほど、その項目のブレがめっき付着量に効きます。<br>
+      <b>使い方</b>：●の位置で線が<b>急な項目ほど管理幅を狭く</b>してください。逆に線が寝ている項目は、
+      多少ずれてもめっき付着量はほとんど動きません。
     </div>
     <h3 style="margin-top:12px">噴射圧力を変えたら</h3>
     <div id="plot-p" class="plot"></div>
@@ -1127,11 +1199,13 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   </div>
 
   <div class="card">
-    <h2>噴射圧力 × ノズル距離 マップ</h2>
+    <h2>④ 噴射圧力 × ノズル距離 マップ</h2>
     <div class="plot-help">
       色は片面めっき付着量。<b>太い黒線が「目標めっき付着量ちょうど」のライン</b>で、この線の上ならどこでも目標になります。
       線が寝ている（横に長い）ほど、その付近は圧力のブレに強い条件です。
-      <span style="color:#B91C1C;font-weight:700">赤い点線より右下</span> はスプラッシュ発生域なので避けてください。★ が現在の条件です。
+      <span style="color:#B91C1C;font-weight:700">赤い点線より右下</span> はスプラッシュ発生域なので避けてください。★ が現在の条件です。<br>
+      <b>運転点の選び方</b>：黒線の上で、<b>赤い点線からいちばん離れていて、かつ線が寝ている</b>ところを選ぶと、
+      圧力が多少ぶれても目標を外さず、飛散にも余裕があります。
     </div>
     <div id="plot-map" class="plot tall"></div>
     <div class="legend">
@@ -1143,7 +1217,11 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 
   <div class="card">
     <h2>装置と条件の関係（模式図）</h2>
-    <p class="sub">入力した条件が図に反映されます。縮尺は実機と異なります。</p>
+    <p class="sub">
+      入力した条件が図に反映されます。縮尺は実機と異なります。
+      ノズルと鋼板の位置関係、すき間、噴流の向きを目で確かめるための図で、
+      <b>この図から数値を読み取ることはできません</b>。
+    </p>
     <canvas id="diagram"></canvas>
   </div>
 
@@ -1161,11 +1239,35 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
       <h3 style="margin-top:12px">③ 液膜厚さ t(x)</h3>
       <div id="plot-film" class="plot"></div>
       <h3 style="margin-top:12px">④ 計算内訳</h3>
+      <div class="plot-help">
+        めっき付着量がどう決まったかの途中経過です。見るべき点は次のとおり。<br>
+        <b>最大衝突圧力 P_max</b>／<b>最大せん断応力 τ_max</b>：液膜を押し戻す力。大きいほど薄くなります。<br>
+        <b>メータリング位置 x</b>：最終膜厚が決まる位置。0 が噴流の中心（よどみ点）で、プラスが引き上げ方向。<br>
+        <b>無次元流束 Q</b>：<b>自由引き上げの上限 0.6667 に近いほどワイピングが効いていない</b>状態です。
+        0 に近いほど強く掻き落としています。<br>
+        <b>ワイピング効率 t0/hf</b>：ワイピング前後の膜厚比。大きいほど削れています。<br>
+        <b>板幅補正係数</b>：板端で噴流が回り込むぶんの補正。<br>
+        <b>噴流モデル</b>：ノズル距離／すき間（Z/d）で自動的に切り替わります。
+        遠方場は近接場より検証データが少ない領域です。
+      </div>
       <div id="check-detail"></div>
       <h3 style="margin-top:12px">⑤ モデルからの注意</h3>
+      <div class="plot-help">
+        いま入力した条件が、モデルの前提からどれだけ外れているかを見て<b>自動で出している警告</b>です。
+        何も出ていなければ、前提から大きく外れる条件は見つからなかったという意味です。
+      </div>
       <div id="check-warn" style="font-size:12.5px;color:#475569;line-height:1.8"></div>
     </div>
   </details>
+
+  <div class="card">
+    <h2>実績から学んだモデルの答えと見くらべる</h2>
+    <p class="sub">
+      このタブの数字はすべて<b>物理式だけ</b>から出したものです。実機の実績は一切見ていません。<br>
+      同じ条件で実績モデルが何と答えるかは、モデル比較タブで並べて確認できます。
+    </p>
+    <button class="btn btn-ghost" onclick="switchTab('modecmp')">モデル比較タブを開く</button>
+  </div>
 </div>
 
 <!-- ================================================================
@@ -1222,6 +1324,64 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
   </div>
 
   <div id="calib-out"></div>
+</div>
+
+<!-- ================================================================
+     共通 TAB : モデル比較（実績モデル ⇔ 理論モデル）
+================================================================= -->
+<div id="tab-modecmp" class="tab-content">
+
+  <div class="note info" style="margin-top:0">
+    <b>同じ条件を2つのモデルに入れて、答えを並べます。</b><br>
+    <b>実績モデル</b>＝過去の操業実績から学習したもの。<b>理論モデル</b>＝公開文献の物理式で計算したもの。
+    成り立ちがまったく違うので、<b>近い答えになれば「その条件は無理がない」という一つの傍証</b>になります。
+  </div>
+
+  <div class="card">
+    <h2>両方のモデルで計算する</h2>
+    <p class="sub">
+      いま「実績モデル ＞ 条件設計」で選んでいる条件
+      （<b id="modecmp-cond">—</b>）を理論モデル側へ写して、両方を計算します。<br>
+      条件を変えたいときは、先に実績モデルの条件設計タブで変えてから、ここへ戻ってきてください。
+    </p>
+    <button class="btn btn-primary" onclick="runModeCompare()" id="modecmp-btn">
+      この条件で両方のモデルを計算する
+    </button>
+    <div id="modecmp-import-note" style="font-size:12.5px;color:#64748B;margin-top:10px;line-height:1.7"></div>
+  </div>
+
+  <div class="card">
+    <h2>結果をならべる</h2>
+    <div id="mode-compare-out"></div>
+  </div>
+
+  <div class="card">
+    <h2>そろえられる条件・そろえられない条件</h2>
+    <p class="sub">
+      2つのモデルは<b>入力そのものが違います</b>。そろわない項目があることを分かったうえで見てください。
+    </p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>条件</th><th>実績モデル</th><th>理論モデル</th><th>この画面での扱い</th></tr></thead>
+      <tbody>
+        <tr><td>通板速度</td><td>中央速度</td><td>通板速度</td><td>そのまま写す</td></tr>
+        <tr><td>板幅</td><td>製品板幅</td><td>板幅</td><td>そのまま写す</td></tr>
+        <tr><td>目標付着量</td><td><b>両面合計</b></td><td><b>片面</b></td><td>2で割って写す</td></tr>
+        <tr><td>浴温</td><td>使用ポット温度</td><td>浴温</td><td>GIのみ写す。<b>GLは写さない</b>（物理モデルの前提 420〜500℃ の外）</td></tr>
+        <tr><td>ノズル位置</td><td>設備Y座標</td><td>ノズル先端〜鋼板の実距離</td><td><b>基準が違う。差は取れない</b></td></tr>
+        <tr><td>ノズル圧力</td><td>表ノズル圧力</td><td>プレナムゲージ圧</td><td><b>測定点が同じか確認できていない。写さない</b></td></tr>
+        <tr><td>ノズルすき間・ガス種</td><td>データに無い</td><td>必須入力</td><td>理論側の値をそのまま使う（仮定）</td></tr>
+        <tr><td>付着量記号・スパングル等9区分</td><td>必須入力</td><td>概念が無い</td><td>理論モデルは製品仕様を見ない</td></tr>
+        <tr><td>設備5項目（ポット張力ほか）</td><td>必須入力</td><td>概念が無い</td><td>同上</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note plain">
+      <b>両面合計の作り方も違います。</b>理論モデルは片面を2倍しているだけ（表裏対称の仮定）で、
+      実績モデルは表面平均と裏面平均を別々に予測して足しています。
+      合計が近くても、<b>表と裏の配分まで合っている保証はありません</b>。
+    </div>
+  </div>
+
+  <div class="disclaimer">本ツールの結果は実機保証値ではありません。事前設定・条件検討の目安として使用してください。</div>
 </div>
 
 </div><!-- /main -->
@@ -1301,12 +1461,14 @@ function py(fn, payload){
   _pyQueue = result.then(() => {}, () => {});
   return result;
 }
+/* モードと開いていたタブは保存しない。アプリは必ず「実績モデル ＞ 条件設計」から始める。
+   ライン・付着量記号・目標値は前回の続きから使えるよう保存する。 */
 function saveState(){
   try{
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
     localStorage.setItem(ML_STORE_KEY, JSON.stringify({
-      mode: mlState.mode, tab: mlState.tab, line: mlState.line,
-      code: mlState.code, target: mlState.target, codeChanged: mlState.codeChanged,
+      line: mlState.line, code: mlState.code,
+      target: mlState.target, codeChanged: mlState.codeChanged,
     }));
   }catch(e){}
 }
@@ -1321,7 +1483,12 @@ function loadState(){
   }catch(e){}
   try{
     const raw = localStorage.getItem(ML_STORE_KEY);
-    if (raw) Object.assign(mlState, JSON.parse(raw));
+    if (raw){
+      const s = JSON.parse(raw);
+      // 旧バージョンが保存した mode / tab は無視する（残っていると初期画面が変わってしまう）
+      delete s.mode; delete s.tab;
+      Object.assign(mlState, s);
+    }
   }catch(e){}
 }
 
@@ -1455,6 +1622,10 @@ function setGasSilent(id, gas){
 ================================================================== */
 const PHYS_TABS = ['design','quick','check','calib'];
 const ML_TABS   = ['mlhelp','mldesign','mlhmi','mlcompare'];
+/* 「モデル比較」はどちらのモードにも属さない。両方のナビに同じタブを出す。 */
+const SHARED_TABS = ['modecmp'];
+
+let currentTab = null;
 
 function switchMode(mode){
   mlState.mode = mode;
@@ -1463,7 +1634,8 @@ function switchMode(mode){
   $('mode-phys').classList.toggle('active', !ml);
   $('app-nav-ml').style.display = ml ? 'flex' : 'none';
   $('app-nav').style.display    = ml ? 'none' : 'flex';
-  saveState();
+  // 共通タブを開いているときはナビだけ入れ替える（見ている内容から追い出さない）
+  if (SHARED_TABS.includes(currentTab)) { switchTab(currentTab); return; }
   switchTab(ml ? (mlState.tab || 'mldesign') : 'design');
 }
 
@@ -1471,14 +1643,16 @@ function switchTab(name){
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   $('tab-'+name).classList.add('active');
-  const btn = $('nav-'+name);
-  if (btn) btn.classList.add('active');
+  // 共通タブはナビボタンが2つある（実績モデル側は末尾に -ml が付く）
+  [$('nav-'+name), $('nav-'+name+'-ml')].forEach(b => { if (b) b.classList.add('active'); });
   window.scrollTo({top:0, behavior:'instant'});
+  currentTab = name;
   if (ML_TABS.includes(name)) mlState.tab = name;
   saveState();
   if (name==='check' && checkDirty) runCheck(false);
   if (name==='mlhmi') runMlPredict();
   if (name==='mlcompare') buildMlCompare();
+  if (name==='modecmp') renderModeCompare();
   // 隠れている間に画面幅が変わっていることがあるので、開いた時点で必ず追従させる
   resizeAllPlots();
 }
@@ -1492,8 +1666,8 @@ let mlReady = false;
 let mlDesignResult = null;
 
 const mlState = {
-  // 初回は使い方タブから。2回目以降は前回開いていたタブを localStorage から復元する。
-  mode: 'ml', tab: 'mlhelp',
+  // 起動時はいつでも「実績モデル ＞ 条件設計」。モードとタブは保存も復元もしない。
+  mode: 'ml', tab: 'mldesign',
   line: 'GI', code: 'Z08', target: null,
   codeChanged: false,  // 直前のコイルから付着量記号が変わるか（誤差の見積もりにだけ使う）
   cond: {},      // 条件設計タブの条件（実績モデルの基準）
@@ -1844,10 +2018,91 @@ function buildMlFields(){
   buildMlFixed();
 }
 
-/* 手順1の製品サイズ（板厚・板幅）*/
+/* 手順1の製品サイズ（板厚・板幅）。
+   サイズを変えたら通板速度もそのサイズの実績へ入れ替える（onMlSizeChanged）。 */
 function buildMlProduct(){
   $('ml-product').innerHTML = ['製品板厚_mm','製品板幅_mm']
-    .map(k => mlNumRow(k, mlState.cond[k], 'setMlField', 'runMlDesign(true)')).join('');
+    .map(k => mlNumRow(k, mlState.cond[k], 'setMlField', 'onMlSizeChanged()')).join('');
+}
+
+/* ---------- 板厚・板幅 → 通板速度 ---------- */
+/* 板厚は通板速度と強く連動している（実績の相関 GI -0.86 / GL -0.69）。
+   サイズだけ変えて速度を記号別中央値のまま置くと、実在しない組合せの条件になる。
+   そのため、そのサイズに近い実績の中央値を速度へ入れる。予測モデルには手を入れていない。 */
+const SPEED_KEY = '中央速度_m_min';
+let mlSpeedUndo = null;   // 自動で入れる直前の速度。「戻す」で使う。
+
+async function onMlSizeChanged(){
+  if (!mlReady) return;
+  const before = parseFloat(mlState.cond[SPEED_KEY]);
+  let hint = null;
+  try {
+    hint = (await py('ml_speed_hint', {
+      line: mlState.line,
+      '製品板厚_mm': mlState.cond['製品板厚_mm'],
+      '製品板幅_mm': mlState.cond['製品板幅_mm'],
+    })).speed_hint;
+  } catch(e){ console.error(e); }
+  if (hint && isFinite(hint.value)){
+    const applied = applyMlSpeed(hint.value);
+    mlSpeedUndo = isFinite(before) && Math.abs(before - applied) > 1e-9 ? before : null;
+    renderMlSpeedNote(hint, applied);
+  }
+  await runMlDesign(true);
+}
+
+/* 速度をスライダー・数値欄・条件のすべてに反映する。
+   バーは刻みの上にしか止まれず、範囲外の値も勝手に丸める。条件側も同じ値に揃えておく
+   （揃えないと、画面が 64.9 なのに計算は 64.92 でしている、という食い違いが起きる）。 */
+function applyMlSpeed(value){
+  const b = mlSliderBounds(SPEED_KEY);
+  let v = value;
+  if (b){
+    v = Math.min(b.max, Math.max(b.min, value));
+    v = Number((b.min + Math.round((v - b.min) / b.step) * b.step).toFixed(6));
+  }
+  mlState.cond[SPEED_KEY] = v;
+  syncMlSliders(SPEED_KEY, v);
+  saveState();
+  return v;
+}
+
+function undoMlSpeed(){
+  if (mlSpeedUndo === null) return;
+  applyMlSpeed(mlSpeedUndo);
+  mlSpeedUndo = null;
+  $('ml-speed-note').innerHTML =
+    `<div class="note plain">通板速度を元の値に戻しました。板厚・板幅を変えると、また実績の値が入ります。</div>`;
+  runMlDesign(true);
+}
+
+function renderMlSpeedNote(hint, applied){
+  const el = $('ml-speed-note');
+  if (!el) return;
+  if (!hint){ el.innerHTML = ''; return; }
+  const dec = ML_FIELDS[SPEED_KEY].dec;
+  // どの範囲の実績を使ったかは必ず出す。「板厚 3.2 mm の実績」ではなく
+  // 「板厚 2.30〜3.20 mm の実績」と書かないと、帯の幅を実際より狭く受け取られる。
+  const span = (r, d, unit) => (r && r.length === 2)
+    ? `${fmt(r[0], d)}〜${fmt(r[1], d)} ${unit}` : null;
+  const tSpan = span(hint.thickness_range, ML_FIELDS['製品板厚_mm'].dec, 'mm');
+  const wSpan = span(hint.width_range, ML_FIELDS['製品板幅_mm'].dec, 'mm');
+  const count = hint.n ? ` <b>${hint.n} 件</b>` : '';
+  const basis = hint.basis === 'cell'
+      ? `板厚 ${tSpan} × 板幅 ${wSpan} の実績${count}の中央値`
+    : hint.basis === 'thickness_row'
+      ? `板厚 ${tSpan} の実績${count}の中央値（この板幅に近い実績が少ないため、板厚だけで求めました）`
+      : `${esc(mlState.line)} 全体の実績中央値（このサイズに近い実績がありません）`;
+  const clamp = hint.clamped
+    ? `<br><b>このサイズは実績の外側です。</b>実績にある端の帯の値を出しています（計算で外挿はしていません）。`
+    : '';
+  const undo = mlSpeedUndo !== null
+    ? ` <button class="chip" onclick="undoMlSpeed()">元の ${fmt(mlSpeedUndo, dec)} m/min に戻す</button>` : '';
+  const shown = (applied === undefined || applied === null) ? hint.value : applied;
+  el.innerHTML = `<div class="note ${hint.clamped ? 'warn' : 'plain'}">
+    通板速度に <b>${fmt(shown, dec)} m/min</b> を入れました（${basis}）。${clamp}<br>
+    生産計画で速度が決まっている場合は、下のスライダーで上書きしてください。${undo}
+  </div>`;
 }
 
 /* 手順3の「先に決まっている条件」。指を離した時点で答えを出しなおす。 */
@@ -1911,6 +2166,9 @@ async function loadMlDefaults(keepTarget){
   if (info && info.codes[mlState.code]) info.codes[mlState.code].featureRanges = d.features;
   mlState.compare = Object.assign({}, d.condition);
   buildMlSelect(); buildMlProduct(); buildMlFields(); buildMlTarget(); buildMlEffectTable();
+  // 速度の初期値も製品サイズから決めている。その根拠を最初から見せる。
+  mlSpeedUndo = null;
+  renderMlSpeedNote(d.speed_hint, d.condition[SPEED_KEY]);
   saveState();
   // ライン・記号を変えたら答えも出しなおす。
   // これが無いと、前のラインの答えが残ったままになる（起動時は init が呼ぶので除く）。
@@ -2422,14 +2680,16 @@ async function runDesign(){
   } catch(e){ return; }
   designResult = data.design;
   renderDesign(designResult);
-  renderModeCompare();
-  $('design-out').scrollIntoView({behavior:'smooth', block:'start'});
+  await renderModeCompare();
+  // モデル比較タブから呼ばれたときは、隠れている条件設計タブへスクロールしない
+  const jump = currentTab === 'modecmp' ? $('mode-compare-out') : $('design-out');
+  if (jump) jump.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 /* ---------- 実績モデルの条件を理論モデルへ写す ---------- */
 /* 写すのは両モードで意味が同じ4項目だけ。Yノズル位置は設備座標であって
    ノズル〜鋼板の実距離とは確認できていないため、距離としては写さない。 */
-function importFromMl(){
+async function importFromMl(){
   if (!mlBoot || !mlState.cond || !mlState.cond.line){
     toast('先に実績モデルで条件を選んでください'); return;
   }
@@ -2451,10 +2711,30 @@ function importFromMl(){
   notes.push('ノズルすき間とガス種は実績データに無いため、この画面の値のままです。');
   buildInputs();
   saveState();
-  $('import-ml-note').innerHTML = `実績モデル（${esc(mlState.line)} / ${esc(mlState.code)}）から取り込みました。<br>`
-    + notes.join('<br>');
+  const msg = `実績モデル（${esc(mlState.line)} / ${esc(mlState.code)}）から取り込みました。<br>` + notes.join('<br>');
+  // 取り込みボタンは条件設計タブとモデル比較タブの両方にあるので、どちらの説明も更新する
+  [$('import-ml-note'), $('modecmp-import-note')].forEach(el => { if (el) el.innerHTML = msg; });
   toast('実績モデルの条件を取り込みました');
-  runDesign();
+  await runDesign();
+}
+
+/* ---------- モデル比較タブ：条件を写して両方のモデルを計算する ---------- */
+async function runModeCompare(){
+  if (!mlBoot || !mlState.cond || !mlState.cond.line){
+    toast('先に実績モデルで条件を選んでください'); return;
+  }
+  // importFromMl が末尾で runDesign を呼び、runDesign が renderModeCompare を呼ぶ
+  await importFromMl();
+}
+
+/* 比較タブの見出しに、いま写す条件を出しておく。 */
+function renderModeCompareCond(){
+  const el = $('modecmp-cond');
+  if (!el) return;
+  const c = mlState.cond || {};
+  el.textContent = (!mlBoot || !c.line) ? '—'
+    : `${mlState.line} / ${mlState.code}・板厚 ${fmt(c['製品板厚_mm'],2)} mm・板幅 ${fmt(c['製品板幅_mm'],0)} mm`
+      + `・速度 ${fmt(c[SPEED_KEY],1)} m/min・目標 ${fmt(mlState.target,1)} g/m²（両面合計）`;
 }
 
 /* ---------- 2つのモードの答えを並べる ---------- */
@@ -2472,13 +2752,14 @@ function modeCompareRow(label, ml, phys, unit, dec, note){
 
 async function renderModeCompare(){
   const out = $('mode-compare-out');
+  renderModeCompareCond();
   if (!out) return;
   if (!mlBoot || !mlState.cond || !mlState.cond.line){
     out.innerHTML = `<div class="note plain">実績モデルで条件を選ぶと、ここに比較が出ます。</div>`;
     return;
   }
   if (!designResult || !designResult.candidates || !designResult.candidates.length){
-    out.innerHTML = `<div class="note plain">上の「計算する」を押すと、実績モデルとの比較がここに出ます。</div>`;
+    out.innerHTML = `<div class="note plain">上の「この条件で両方のモデルを計算する」を押すと、ここに結果が出ます。</div>`;
     return;
   }
   let ml;
@@ -2493,10 +2774,12 @@ async function renderModeCompare(){
 
   const rows =
       modeCompareRow('予測めっき付着量（両面合計）', ml.CH_sum_pred_g_m2, physBoth, 'g/m²', 1)
-    + modeCompareRow('ノズル圧力', mlState.cond['表ノズル圧力_kPa'], c.plenum_pressure_kpa, 'kPa', 1)
     + modeCompareRow('通板速度', mlState.cond['中央速度_m_min'], state.fixed.line_speed_mpm, 'm/min', 1)
     + modeCompareRow('板幅', mlState.cond['製品板幅_mm'], state.fixed.strip_width_mm, 'mm', 0)
     + modeCompareRow('浴温', mlState.cond['使用ポット温度_C'], state.fixed.bath_temp_c, '℃', 0)
+    + modeCompareRow('ノズル圧力', mlState.cond['表ノズル圧力_kPa'], c.plenum_pressure_kpa, 'kPa', 1,
+        '実機側は<b>表ノズルの圧力計の値</b>、理論側は<b>プレナムゲージ圧</b>です。'
+      + '測定点が同じものか確認できていないため、条件として写しておらず、差も取れません。')
     + modeCompareRow('ノズル位置', mlState.cond['表ノズル位置平均_mm'], c.nozzle_strip_distance_mm, 'mm', 2,
         '実機側は<b>設備Y座標</b>、理論側は<b>ノズル先端〜鋼板の実距離</b>です。基準が違うため差は取れません。');
 
@@ -3363,16 +3646,16 @@ import gaswipelab.web_api as _api
   dz.addEventListener('dragleave', () => dz.classList.remove('over'));
   dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); loadCSV(e.dataTransfer.files[0]); });
 
-  // 実績モデルを既定にする。保存済みの記号があればそれを復元する。
+  // 起動画面は必ず「実績モデル ＞ 条件設計」。保存済みの記号があればそれを復元する。
   if (!mlBoot.lines[mlState.line]) mlState.line = Object.keys(mlBoot.lines)[0];
   if (!mlBoot.lines[mlState.line].codes[mlState.code]){
     mlState.code = Object.keys(mlBoot.lines[mlState.line].codes).sort()[0];
   }
   await loadMlDefaults(true);
   mlReady = true;
-  switchMode(mlState.mode === 'phys' ? 'phys' : 'ml');
-  if (mlState.mode === 'phys') await runDesign();
-  else await runMlDesign(true);
+  mlState.tab = 'mldesign';
+  switchMode('ml');
+  await runMlDesign(true);
 }
 
 if ('serviceWorker' in navigator){

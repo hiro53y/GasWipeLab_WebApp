@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+import bisect
 import math
 from typing import Any
 
@@ -80,6 +81,10 @@ class RangeChecker:
         """実機設計の初期条件。設備条件はその記号の実績中央値を使う。
 
         製品板厚・製品板幅だけは `DEFAULT_PRODUCT_SIZE` で固定する。
+        速度は記号別中央値のままだと固定した初期サイズと噛み合わないことがある
+        （例: GI記号「122」の記号別中央値は57.0 m/minだが、0.40mm×1219mmの実績中央値は
+        125.0 m/min）。`speed_for_size` が求まればその値で上書きし、求まらない記号は
+        従来どおり記号別中央値をフォールバックとして使う。
         """
         info = self.lines.get(line)
         if not info:
@@ -90,6 +95,11 @@ class RangeChecker:
         for name, fixed in DEFAULT_PRODUCT_SIZE.items():
             if name in values:
                 values[name] = fixed
+        if "中央速度_m_min" in values:
+            hint = self.speed_for_size(
+                line, DEFAULT_PRODUCT_SIZE["製品板厚_mm"], DEFAULT_PRODUCT_SIZE["製品板幅_mm"])
+            if hint is not None:
+                values["中央速度_m_min"] = hint["value"]
         return values
 
     def bounds(self, line: str, code: str, feature: str,
@@ -240,6 +250,101 @@ class RangeChecker:
               + flow["ln_pressure"] * math.log(pressure_kpa)
               + flow["ln_speed"] * math.log(speed_mpm))
         return math.exp(ln)
+
+    def speed_for_size(self, line: str, thickness_mm: float, width_mm: float) -> dict[str, Any] | None:
+        """製品板厚・製品板幅から、実績に基づく通板速度を返す。
+
+        ライン単位の板厚×板幅グリッド（`tools/build_reference_data.py` の
+        `fit_speed_by_size` が作る `speed_by_size`）を、セル→同じ板厚帯内の
+        近いセル→板厚帯→近い板厚帯→ライン中央値の順にたどる。
+        実績の外側へは絶対に延ばさない（外挿しない）。
+        `speed_by_size` が無い旧版の reference.json や未知のラインでは None を返す。
+        """
+        try:
+            info = self.lines.get(line)
+            if not info:
+                return None
+            speed = info.get("speed_by_size")
+            if not speed:
+                return None
+            thickness = float(thickness_mm)
+            width = float(width_mm)
+            if math.isnan(thickness) or math.isnan(width):
+                return None
+
+            thickness_edges = speed["thickness_edges"]
+            width_edges = speed["width_edges"]
+            cells = speed.get("cells", {})
+            thickness_rows = speed.get("thickness_rows", {})
+
+            def bucket(edges: list[float], value: float) -> int:
+                idx = bisect.bisect_right(edges, value) - 1
+                return max(0, min(idx, len(edges) - 2))
+
+            ti = bucket(thickness_edges, thickness)
+            wi = bucket(width_edges, width)
+            clamped = (thickness < thickness_edges[0] or thickness > thickness_edges[-1]
+                       or width < width_edges[0] or width > width_edges[-1])
+
+            cell = cells.get(f"{ti},{wi}")
+            if cell is not None:
+                return {
+                    "value": float(cell["median"]),
+                    "n": cell.get("n"),
+                    "basis": "cell",
+                    "thickness_range": [thickness_edges[ti], thickness_edges[ti + 1]],
+                    "width_range": [width_edges[wi], width_edges[wi + 1]],
+                    "clamped": clamped,
+                }
+
+            # 同じ板厚帯の中で、板幅が最も近いセルを探す
+            same_ti_widths = [int(key.split(",")[1]) for key in cells
+                              if int(key.split(",")[0]) == ti]
+            if same_ti_widths:
+                nearest_wi = min(same_ti_widths, key=lambda w: abs(w - wi))
+                cell = cells[f"{ti},{nearest_wi}"]
+                return {
+                    "value": float(cell["median"]),
+                    "n": cell.get("n"),
+                    "basis": "cell",
+                    "thickness_range": [thickness_edges[ti], thickness_edges[ti + 1]],
+                    "width_range": [width_edges[nearest_wi], width_edges[nearest_wi + 1]],
+                    "clamped": clamped,
+                }
+
+            row = thickness_rows.get(str(ti))
+            if row is not None:
+                return {
+                    "value": float(row["median"]),
+                    "n": row.get("n"),
+                    "basis": "thickness_row",
+                    "thickness_range": [thickness_edges[ti], thickness_edges[ti + 1]],
+                    "width_range": None,
+                    "clamped": clamped,
+                }
+
+            if thickness_rows:
+                nearest_ti = min((int(key) for key in thickness_rows), key=lambda t: abs(t - ti))
+                row = thickness_rows[str(nearest_ti)]
+                return {
+                    "value": float(row["median"]),
+                    "n": row.get("n"),
+                    "basis": "thickness_row",
+                    "thickness_range": [thickness_edges[nearest_ti], thickness_edges[nearest_ti + 1]],
+                    "width_range": None,
+                    "clamped": clamped,
+                }
+
+            return {
+                "value": float(speed["line_median"]),
+                "n": speed.get("n"),
+                "basis": "line_median",
+                "thickness_range": None,
+                "width_range": None,
+                "clamped": clamped,
+            }
+        except Exception:
+            return None
 
     # ------------------------------------------------------------------
     def evaluate(self, line: str, code: str, values: dict[str, Any],

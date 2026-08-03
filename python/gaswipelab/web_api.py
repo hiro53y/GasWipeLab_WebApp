@@ -34,7 +34,7 @@ from gaswipelab.services.design_service import (
 )
 from gaswipelab.hmi import diagnostics as hmi_diagnostics
 from gaswipelab.hmi import screen as hmi_screen_module
-from gaswipelab.ml.ood import TARGET_RANGE_GM2, RangeChecker
+from gaswipelab.ml.ood import DEFAULT_PRODUCT_SIZE, TARGET_RANGE_GM2, RangeChecker
 from gaswipelab.ml.predictor import (
     CODE_CHANGE_ERROR_FACTOR,
     ERROR_REFERENCE,
@@ -313,12 +313,29 @@ def ml_defaults(payload_json: str) -> str:
         condition["line"] = line
         condition["coating_code"] = code
         stats = checker.code_stats(line, code) or {}
+        speed_hint = checker.speed_for_size(
+            line, DEFAULT_PRODUCT_SIZE["製品板厚_mm"], DEFAULT_PRODUCT_SIZE["製品板幅_mm"])
         return _ok({
             "condition": condition,
             "stats": stats,
             "target_ch_gm2": stats.get("CH_median"),
             "features": (entry or {}).get("features", {}),
+            "speed_hint": speed_hint,
         })
+    except Exception as exc:
+        return _error(exc)
+
+
+def ml_speed_hint(payload_json: str) -> str:
+    """製品板厚・製品板幅から、実績に基づく通板速度の初期値を返す。"""
+    try:
+        payload = json.loads(payload_json)
+        line = str(payload.get("line", "GI")).strip()
+        thickness_mm = float(payload["製品板厚_mm"])
+        width_mm = float(payload["製品板幅_mm"])
+        _machine()
+        checker = _machine_state["checker"]
+        return _ok({"speed_hint": checker.speed_for_size(line, thickness_mm, width_mm)})
     except Exception as exc:
         return _error(exc)
 
