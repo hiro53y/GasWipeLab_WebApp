@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GasWipeLab">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>GasWipeLab v4.4.5 — ワイピング条件設計</title>
+<title>GasWipeLab v4.4.7 — ワイピング条件設計</title>
 <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <style>
@@ -509,7 +509,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <!-- ============ loading ============ -->
 <div id="loading">
   <div class="spinner"></div>
-  <h1>GasWipeLab v4.4.5</h1>
+  <h1>GasWipeLab v4.4.7</h1>
   <div id="load-status">初期化中…（初回のみ 30 秒ほどかかります）</div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:4%"></div></div>
 </div>
@@ -520,7 +520,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <header class="app" id="app-header" style="display:none">
   <div>
     <div class="logo">GasWipeLab</div>
-    <div class="ver">ワイピング条件 事前設定ツール v4.4.5</div>
+    <div class="ver">ワイピング条件 事前設定ツール v4.4.7</div>
   </div>
   <div class="spacer"></div>
   <button class="cal-badge" id="cal-badge" onclick="switchTab('calib')">未校正</button>
@@ -4085,7 +4085,24 @@ import gaswipelab.web_api as _api
   await runMlDesign(true);
 }
 
+/* 新しい版が来たときの入れ替え。
+   初回アクセスではブラウザのキャッシュから古い index.html が読まれ、
+   その裏でサービスワーカーが新しい版を取り込む。そのままだと
+   「もう一度開き直すまで古い画面」になるので、起動直後なら自動で読み直す。
+   使用中に切り替わった場合は、入力を失わせないよう案内だけ出す。 */
 if ('serviceWorker' in navigator){
+  const hadController = !!navigator.serviceWorker.controller;
+  const startedAt = Date.now();
+  let swapped = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || swapped) return;   // 初回インストールでは読み直さない
+    swapped = true;
+    if (Date.now() - startedAt < 10000){
+      location.reload();
+    } else {
+      toast('新しい版があります。開き直すと反映されます');
+    }
+  });
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 init().catch(err => {

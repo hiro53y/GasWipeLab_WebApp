@@ -1,7 +1,7 @@
-// Service Worker — GasWipeLab v4.4.5 オフラインキャッシュ
+// Service Worker — GasWipeLab v4.4.7 オフラインキャッシュ
 // index.html や reference.json を直したときは必ずこの名前を上げること。
 // 上げないと、すでに開いたことのある端末では古いファイルがキャッシュから使われ続ける。
-const CACHE = 'gaswipelab-v4.4.5';
+const CACHE = 'gaswipelab-v4.4.7';
 const STATIC = [
   './',
   './index.html',
@@ -50,7 +50,14 @@ const STATIC = [
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(STATIC))
+    // cache:'reload' を付けてブラウザのHTTPキャッシュを迂回する。
+    // 付けないと、ブラウザが持っている古い index.html がそのまま
+    // 新しい名前のキャッシュへ焼き込まれ、キャッシュ名を上げても
+    // 利用者には古い画面が出続ける（v4.4.5 の名前のキャッシュへ
+    // v4.4.4 の index.html が入る事象を実際に確認した）。
+    caches.open(CACHE).then(cache =>
+      cache.addAll(STATIC.map(url => new Request(url, {cache: 'reload'})))
+    )
   );
 });
 
