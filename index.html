@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GasWipeLab">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>GasWipeLab v4.4.3 — ワイピング条件設計</title>
+<title>GasWipeLab v4.4.4 — ワイピング条件設計</title>
 <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <style>
@@ -238,8 +238,10 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .anscell .l{font-size:10.5px;font-weight:600;opacity:.85}
 .anscell .v{font-size:21px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
 .anscell .u{font-size:10.5px;font-weight:600;opacity:.8;margin-left:3px}
-/* 「実機で変えるのはこの1つ」を主役にする */
-.ansact{background:#fff;color:var(--brand);border-radius:12px;padding:13px 14px;margin-bottom:10px}
+/* 設定値グリッドの見出し */
+.setlabel{font-size:11px;font-weight:800;letter-spacing:.02em;opacity:.8;margin:2px 0 6px}
+/* 変える1項目を、設定値グリッドの下に添える */
+.ansact{background:#fff;color:var(--brand);border-radius:12px;padding:13px 14px;margin-top:12px}
 .ansact.keep{background:rgba(255,255,255,.14);color:#fff}
 .ansact .k{font-size:11px;font-weight:800;letter-spacing:.02em;opacity:.72}
 .ansact .n{font-size:14.5px;font-weight:800;margin-top:3px}
@@ -251,12 +253,6 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .ansact .un{font-size:12px;font-weight:700;opacity:.8}
 .ansact .dl{font-size:12.5px;font-weight:800;background:#EFF6FF;border:1px solid #BFDBFE;
   color:#1D4ED8;border-radius:999px;padding:2px 9px;margin-left:2px}
-.keeprow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.keeprow .kt{font-size:10.5px;font-weight:800;opacity:.75;margin-right:2px}
-.keepitem{font-size:11px;background:rgba(255,255,255,.13);border-radius:999px;padding:3px 9px;
-  white-space:nowrap;font-variant-numeric:tabular-nums}
-.keepitem b{font-size:12.5px;margin:0 1px}
-.keepitem i{font-style:normal;opacity:.7;margin-left:4px;font-size:10px}
 /* 答えの直後に置く「調整して確かめる」導線 */
 .tryrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
 .anscell .chg{font-size:10.5px;font-weight:700;margin-top:3px;color:#BBF7D0}
@@ -491,7 +487,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <!-- ============ loading ============ -->
 <div id="loading">
   <div class="spinner"></div>
-  <h1>GasWipeLab v4.4.3</h1>
+  <h1>GasWipeLab v4.4.4</h1>
   <div id="load-status">初期化中…（初回のみ 30 秒ほどかかります）</div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:4%"></div></div>
 </div>
@@ -502,7 +498,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <header class="app" id="app-header" style="display:none">
   <div>
     <div class="logo">GasWipeLab</div>
-    <div class="ver">ワイピング条件 事前設定ツール v4.4.3</div>
+    <div class="ver">ワイピング条件 事前設定ツール v4.4.4</div>
   </div>
   <div class="spacer"></div>
   <button class="cal-badge" id="cal-badge" onclick="switchTab('calib')">未校正</button>
@@ -2463,7 +2459,8 @@ function mlAnswerCard(d){
          実機で確かめながら使ってください。${sat.length
            ? `<br>${sat.map(esc).join('・')} は、実績の端で応答が読み取れないため
               境界の値で止めています（これ以上動かしても予測は変わりません）。` : ''}</div>` : '';
-  // 「何を、いくつにするか」を1行で先に出す。実機で手を動かすのはここだけ。
+  // 実機で設定する値は、この画面のいちばんの目的。全項目を大きく出す。
+  // どれを動かすかだけを示して値を小さくすると、設定すべき数字が読み取れなくなる。
   let action = '';
   if (hit && changedKey){
     const f = ML_FIELDS[changedKey];
@@ -2479,33 +2476,22 @@ function mlAnswerCard(d){
          <span class="dl">${after >= before ? '＋' : '−'}${fmt(Math.abs(after - before), f.dec)}</span>`
       : `<span class="to">${fmt(after, f.dec)}</span><span class="un">${esc(f.unit)}</span>`;
     action = `<div class="ansact">
-      <div class="k">実機で変えるのはこの1つ</div>
+      <div class="k">このうち、実機で変えるのは1つだけ</div>
       <div class="n">${esc(name)}</div>
       <div class="vals">${arrow}</div>
     </div>`;
   } else if (d.status === 'ok'){
     action = `<div class="ansact keep">
       <div class="k">実機で変える条件はありません</div>
-      <div class="n">いまの設定のままで目標に届きます</div>
+      <div class="n">上の値は、いまの設定のままです。このままで目標に届きます</div>
     </div>`;
   }
-  // 残りは「そのままにする条件」。確認用なので小さく畳んで出す。
-  const keepCells = ML_ANSWER_KEYS
-    .filter(k => !(hit && (k === changedKey ||
-      (hit.lever === 'nozzle_position' && k === '裏ノズル位置平均_mm'))))
-    .map(k => {
-      const f = ML_FIELDS[k], v = cond[k];
-      if (v === null || v === undefined) return '';
-      const follow = (hit && k === 'ノズル吹込流量_Nm3H' && hit.lever === 'nozzle_pressure')
-        ? '<i>圧力に追従</i>' : '';
-      return `<span class="keepitem">${esc(f.label)} <b>${fmt(v, f.dec)}</b>${esc(f.unit)}${follow}</span>`;
-    }).join('');
-
   return `<div class="answer">
     <h3>この目標を出す操業条件</h3>
     <div class="lead">${lead}</div>
+    <div class="setlabel">実機で設定する値</div>
+    <div class="ansgrid">${cells}</div>
     ${action}
-    <div class="keeprow"><span class="kt">そのままにする条件</span>${keepCells}</div>
     ${caution}
   </div>`;
 }
