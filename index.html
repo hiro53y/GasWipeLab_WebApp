@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GasWipeLab">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>GasWipeLab v4.4.4 — ワイピング条件設計</title>
+<title>GasWipeLab v4.4.5 — ワイピング条件設計</title>
 <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <style>
@@ -238,6 +238,28 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .anscell .l{font-size:10.5px;font-weight:600;opacity:.85}
 .anscell .v{font-size:21px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
 .anscell .u{font-size:10.5px;font-weight:600;opacity:.8;margin-left:3px}
+/* 条件設計の途中経過バー。入力を触っている間も答えが見えるように上へ貼り付ける。
+   スマホでは答えが画面2000px以上下にあり、入力を変えても画面外で更新されていた。 */
+#ml-sticky{position:sticky;top:8px;z-index:40;margin:0 0 10px;border-radius:12px;padding:9px 11px;
+  background:#0F2E4E;color:#fff;box-shadow:0 6px 16px rgba(15,46,78,.22);cursor:pointer;
+  display:none;border:1.5px solid transparent}
+#ml-sticky.on{display:block}
+#ml-sticky.ok{border-color:#4ADE80}
+#ml-sticky.chg{border-color:#FCD34D}
+#ml-sticky .r1{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+#ml-sticky .lb{font-size:10.5px;font-weight:700;color:#A9C7E4}
+#ml-sticky .big{font-size:19px;font-weight:800;line-height:1.15}
+#ml-sticky .un{font-size:10px;color:#A9C7E4}
+#ml-sticky .badge{margin-left:auto;font-size:10.5px;font-weight:800;border-radius:999px;
+  padding:2px 9px;background:rgba(255,255,255,.16);white-space:nowrap}
+#ml-sticky .r2{font-size:11.5px;color:#DCE9F5;margin-top:3px;line-height:1.5}
+#ml-sticky .r2 b{color:#fff}
+#ml-sticky.calc{opacity:.5}
+/* PCではヘッダー・モード切替・タブが上に積み上がるので、その下へ貼り付ける。
+   この上書きは基本の top:8px より後ろに置く（同じ詳細度なので後勝ち）。 */
+@media(min-width:860px){
+  #ml-sticky{top:calc(var(--hdr-h,64px) + var(--mode-h,64px) + var(--nav-h2,64px) + 8px)}
+}
 /* 設定値グリッドの見出し */
 .setlabel{font-size:11px;font-weight:800;letter-spacing:.02em;opacity:.8;margin:2px 0 6px}
 /* 変える1項目を、設定値グリッドの下に添える */
@@ -487,7 +509,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <!-- ============ loading ============ -->
 <div id="loading">
   <div class="spinner"></div>
-  <h1>GasWipeLab v4.4.4</h1>
+  <h1>GasWipeLab v4.4.5</h1>
   <div id="load-status">初期化中…（初回のみ 30 秒ほどかかります）</div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:4%"></div></div>
 </div>
@@ -498,7 +520,7 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
 <header class="app" id="app-header" style="display:none">
   <div>
     <div class="logo">GasWipeLab</div>
-    <div class="ver">ワイピング条件 事前設定ツール v4.4.4</div>
+    <div class="ver">ワイピング条件 事前設定ツール v4.4.5</div>
   </div>
   <div class="spacer"></div>
   <button class="cal-badge" id="cal-badge" onclick="switchTab('calib')">未校正</button>
@@ -964,6 +986,9 @@ canvas#diagram{width:100%;height:auto;display:block;border-radius:8px;background
     ①作るもの ②目標 ③決まっている条件 を指定すると、<b>必要なYノズル位置・圧力・流量</b>が出ます。
     <button class="chip" style="margin-top:7px" onclick="switchTab('mlhelp')">くわしい使い方を見る</button>
   </div>
+
+  <!-- 入力を触っている間も答えが見えるように貼り付ける（押すと答えへ飛ぶ） -->
+  <div id="ml-sticky" onclick="jumpToMlAnswer()"></div>
 
   <div class="card">
     <h2><span class="step-tag">1</span>何を作るか</h2>
@@ -2368,10 +2393,12 @@ async function runMlDesignOnce(auto){
   const payload = Object.assign({}, mlState.cond, {target_ch_gm2: mlState.target});
   if (mlBoot.code_changed_key) payload[mlBoot.code_changed_key] = mlState.codeChanged;
   const out = $('mldesign-out');
+  const sticky = $('ml-sticky');
   let data;
   try {
     if (auto){
       out.classList.add('calc');
+      if (sticky) sticky.classList.add('calc');
       await new Promise(r => setTimeout(r, 16));
       data = await py('ml_design', payload);
     } else {
@@ -2381,11 +2408,12 @@ async function runMlDesignOnce(auto){
     console.error(e); toast('計算に失敗しました');
     // 前回の答えを残さない。残すと、いまの条件に対する答えだと誤解される。
     mlDesignResult = null;
+    renderMlSticky(null);
     out.innerHTML = `<div class="note bad"><b>この条件では答えを出せませんでした。</b><br>
       ${esc(e.message)}<br>条件を見直してもう一度お試しください。</div>`;
     return;
   }
-  finally { out.classList.remove('calc'); }
+  finally { out.classList.remove('calc'); if (sticky) sticky.classList.remove('calc'); }
   mlDesignResult = data.design;
   renderMlDesign(mlDesignResult);
 }
@@ -2496,7 +2524,51 @@ function mlAnswerCard(d){
   </div>`;
 }
 
+/* 入力欄を触っている間も答えが見えるように、上に貼り付くバーへ要点だけ出す。
+   スマホでは答えが 2000px 以上下にあり、条件を変えても更新が画面外で起きていた。 */
+function renderMlSticky(d){
+  const el = $('ml-sticky');
+  if (!el) return;
+  if (!d){ el.className = ''; el.innerHTML = ''; return; }
+  const hit = (d.proposals || []).find(p => p.found);
+  const result = hit ? hit.result : d.current;
+  if (!result){ el.className = ''; el.innerHTML = ''; return; }
+  const pred = result.CH_sum_pred_g_m2;
+  const diff = pred - d.target_ch_gm2;
+  let line2, cls;
+  if (hit){
+    const key = {nozzle_position:'表ノズル位置平均_mm', line_speed:'中央速度_m_min',
+                 nozzle_pressure:'表ノズル圧力_kPa'}[hit.lever];
+    const f = ML_FIELDS[key];
+    const name = hit.lever === 'nozzle_position' ? 'Yノズル位置（表・裏とも）' : f.label;
+    const before = d.current_condition ? d.current_condition[key] : null;
+    line2 = `変えるのは <b>${esc(name)}</b>：`
+          + `${before !== null && before !== undefined ? fmt(before, f.dec) + ' → ' : ''}`
+          + `<b>${fmt(hit.condition[key], f.dec)} ${esc(f.unit)}</b>`;
+    cls = 'chg';
+  } else if (d.status === 'ok'){
+    line2 = 'いまの設定のままで目標に届きます';
+    cls = 'ok';
+  } else {
+    line2 = esc(d.message || '').slice(0, 60);
+    cls = 'chg';
+  }
+  el.className = 'on ' + cls;
+  el.innerHTML = `<div class="r1">
+      <span class="lb">目標</span><span class="big">${fmt(d.target_ch_gm2,1)}</span>
+      <span class="lb">→ 予測</span><span class="big">${fmt(pred,1)}</span><span class="un">g/m²（両面）</span>
+      <span class="badge">${diff>=0?'+':''}${fmt(diff,1)}　答えへ ↓</span>
+    </div>
+    <div class="r2">${line2}</div>`;
+}
+
+function jumpToMlAnswer(){
+  const out = $('mldesign-out');
+  if (out) out.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
 function renderMlDesign(d){
+  renderMlSticky(d);
   let html = '';
   if (d.status !== 'infeasible') html += mlAnswerCard(d);
   const cls = d.status==='ok' ? 'ok' : 'warn';
@@ -3894,6 +3966,10 @@ function syncHeaderHeight(){
   // タブの吸着位置はモード切替バーの高さぶん下げる。
   const m = $('app-mode').offsetHeight;
   document.documentElement.style.setProperty('--mode-h', (m || 0) + 'px');
+  // 途中経過バーをタブの下へ貼り付けるため、実際のタブ高さも測っておく
+  const nav = $('app-nav-ml').style.display !== 'none' ? $('app-nav-ml') : $('app-nav');
+  const nh = nav ? nav.offsetHeight : 0;
+  if (nh) document.documentElement.style.setProperty('--nav-h2', nh + 'px');
 }
 async function installPythonModules(){
   const files = [
