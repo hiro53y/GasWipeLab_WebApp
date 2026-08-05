@@ -1,7 +1,7 @@
-// Service Worker — GasWipeLab v4.4 オフラインキャッシュ
-// reference.json を作り直したときは必ずこの名前を上げること。
-// 上げないと、古い参照データがキャッシュに残ったまま使われる。
-const CACHE = 'gaswipelab-v4.4';
+// Service Worker — GasWipeLab v4.4.3 オフラインキャッシュ
+// index.html や reference.json を直したときは必ずこの名前を上げること。
+// 上げないと、すでに開いたことのある端末では古いファイルがキャッシュから使われ続ける。
+const CACHE = 'gaswipelab-v4.4.3';
 const STATIC = [
   './',
   './index.html',

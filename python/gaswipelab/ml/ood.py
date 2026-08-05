@@ -229,7 +229,9 @@ class RangeChecker:
             "d_p99": round(p99, 3),
             "level": level,
             "features": features,
-            "n": envelope["n"],
+            # 件数は公開用（--redact）の参照データでは落ちている。無くても判定は成り立つので
+            # ここで欠けても落とさない（[] で取ると実績モデル機能が丸ごと動かなくなる）。
+            "n": envelope.get("n"),
         }
 
     def model_ranges(self, line: str) -> dict[str, tuple[float, float]]:
@@ -427,9 +429,11 @@ class RangeChecker:
         if combination:
             if combination["level"] == "unseen":
                 status = _worse(status, CAUTION)
+                # 件数は公開用の参照データでは持っていない。その場合は件数を書かない。
+                n_text = f"（{combination['n']}件）" if combination.get("n") else ""
                 warnings.append(
                     f"各項目は実績範囲内ですが、この {len(combination['features'])} 項目の"
-                    f"組合せは{code}の実績（{combination['n']}件）に見当たりません"
+                    f"組合せは{code}の実績{n_text}に見当たりません"
                     f"（実績分布からの距離 {combination['distance']:.1f}／実績の99%は "
                     f"{combination['d_p99']:.1f} 以内）。予測の信頼度が下がります。"
                 )
